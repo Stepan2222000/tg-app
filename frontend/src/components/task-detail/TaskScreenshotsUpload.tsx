@@ -1,0 +1,196 @@
+import { useState, useRef } from 'react';
+import { apiService } from '../../services/api';
+import { useNotification } from '../../hooks/useNotification';
+
+interface Screenshot {
+  id: number;
+  url: string;
+}
+
+interface TaskScreenshotsUploadProps {
+  assignmentId: number;
+  screenshots: Screenshot[];
+  onScreenshotsChange: (screenshots: Screenshot[]) => void;
+  maxScreenshots?: number;
+}
+
+export function TaskScreenshotsUpload({
+  assignmentId,
+  screenshots,
+  onScreenshotsChange,
+  maxScreenshots = 5,
+}: TaskScreenshotsUploadProps) {
+  const { showSuccess, showError } = useNotification();
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Check how many more screenshots we can add
+    const remainingSlots = maxScreenshots - screenshots.length;
+    if (remainingSlots <= 0) {
+      showError(`Максимум ${maxScreenshots} скриншотов`);
+      return;
+    }
+
+    // Limit files to remaining slots
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    if (filesToUpload.length < files.length) {
+      showError(`Загружено ${filesToUpload.length} из ${files.length} файлов (лимит ${maxScreenshots})`);
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Upload files one by one (or in parallel)
+      const uploadPromises = filesToUpload.map(async (file) => {
+        // Validate file type
+        if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+          throw new Error(`${file.name}: Только PNG и JPG файлы`);
+        }
+
+        // Validate file size (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`${file.name}: Файл слишком большой (макс. 10 МБ)`);
+        }
+
+        // Upload
+        const result = await apiService.uploadScreenshot(assignmentId, file);
+        return result;
+      });
+
+      const results = await Promise.allSettled(uploadPromises);
+
+      // Process results
+      const newScreenshots: Screenshot[] = [];
+      const errors: string[] = [];
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          // API returns only screenshot_id, construct URL
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+          newScreenshots.push({
+            id: result.value.screenshot_id,
+            url: `${apiUrl}/screenshots/${result.value.screenshot_id}`,
+          });
+        } else {
+          errors.push(result.reason.message || `Ошибка загрузки файла ${index + 1}`);
+        }
+      });
+
+      // Update screenshots list
+      if (newScreenshots.length > 0) {
+        onScreenshotsChange([...screenshots, ...newScreenshots]);
+        showSuccess(`Загружено ${newScreenshots.length} скриншотов`);
+      }
+
+      // Show errors
+      if (errors.length > 0) {
+        errors.forEach((error) => showError(error));
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      showError(error instanceof Error ? error.message : 'Ошибка загрузки');
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDelete = async (screenshotId: number) => {
+    try {
+      await apiService.deleteScreenshot(screenshotId);
+      onScreenshotsChange(screenshots.filter((s) => s.id !== screenshotId));
+      showSuccess('Скриншот удален');
+    } catch (error) {
+      console.error('Delete error:', error);
+      showError('Не удалось удалить скриншот');
+    }
+  };
+
+  const handleAddClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const canAddMore = screenshots.length < maxScreenshots;
+
+  return (
+    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-md p-6">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+        Загрузка скриншотов
+      </h2>
+      <p className="text-sm text-text-muted dark:text-text-muted-dark mb-4">
+        Загрузите до {maxScreenshots} скриншотов
+      </p>
+
+      {/* Screenshots Grid */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {/* Existing Screenshots */}
+        {screenshots.map((screenshot) => (
+          <div key={screenshot.id} className="relative aspect-square">
+            <img
+              src={screenshot.url}
+              alt="Screenshot"
+              className="w-full h-full object-cover rounded-lg"
+            />
+            <button
+              onClick={() => handleDelete(screenshot.id)}
+              className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
+              aria-label="Удалить скриншот"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+        ))}
+
+        {/* Add Button */}
+        {canAddMore && (
+          <button
+            onClick={handleAddClick}
+            disabled={isUploading}
+            className={`aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 transition-colors ${
+              isUploading
+                ? 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed'
+                : 'border-gray-300 dark:border-gray-600 hover:border-primary hover:bg-primary/5'
+            }`}
+          >
+            {isUploading ? (
+              <span className="material-symbols-outlined text-3xl text-gray-400 animate-spin">
+                progress_activity
+              </span>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-3xl text-gray-400">
+                  add_photo_alternate
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                  Добавить
+                </span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg"
+        multiple
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
+      {/* Info Text */}
+      <p className="text-xs text-text-muted dark:text-text-muted-dark">
+        Форматы: PNG, JPG. Максимальный размер файла: 10 МБ
+      </p>
+    </div>
+  );
+}

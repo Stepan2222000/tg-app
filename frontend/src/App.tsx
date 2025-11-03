@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { telegramService } from './services/telegram';
 import { NotificationProvider } from './hooks/useNotification';
 import { Home } from './pages/Home';
+import { TasksPage } from './pages/TasksPage';
+import { TaskDetailPage } from './pages/TaskDetailPage';
 
 function App() {
   useEffect(() => {
@@ -19,8 +21,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
-          {/* Placeholder routes for future implementation */}
-          <Route path="/tasks" element={<div>Tasks Page - Coming Soon</div>} />
+          <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/tasks/:assignmentId" element={<TaskDetailPage />} />
           <Route path="/referrals" element={<div>Referrals Page - Coming Soon</div>} />
         </Routes>
       </BrowserRouter>
