@@ -2,11 +2,7 @@ import { useState, useRef } from 'react';
 import { apiService } from '../../services/api';
 import { useNotification } from '../../hooks/useNotification';
 import { logger } from '../../utils/logger';
-
-interface Screenshot {
-  id: number;
-  url: string;
-}
+import type { Screenshot } from '../../types';
 
 interface TaskScreenshotsUploadProps {
   assignmentId: number;
@@ -70,12 +66,16 @@ export function TaskScreenshotsUpload({
 
       results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-          // NEW-CRITICAL-B FIX: Use URL from backend response instead of constructing
-          // Backend returns { id, url, file_path, uploaded_at }
-          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+          // Backend returns { id, file_path, url, uploaded_at }
+          // url is relative path like "/static/screenshots/uuid.jpg"
+          const apiUrl = import.meta.env.VITE_API_URL || '';
+          const screenshot = result.value;
+
           newScreenshots.push({
-            id: result.value.id,  // Backend returns 'id', not 'screenshot_id'
-            url: `${apiUrl}${result.value.url}`,  // Use URL from backend (e.g., "/static/screenshots/uuid.jpg")
+            id: screenshot.id,
+            file_path: screenshot.file_path,
+            url: screenshot.url ? `${apiUrl}${screenshot.url}` : `${apiUrl}/static/screenshots/${screenshot.file_path.split('/').pop()}`,
+            uploaded_at: screenshot.uploaded_at,
           });
         } else {
           errors.push(result.reason.message || `Ошибка загрузки файла ${index + 1}`);
@@ -133,22 +133,27 @@ export function TaskScreenshotsUpload({
       {/* Screenshots Grid */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {/* Existing Screenshots */}
-        {screenshots.map((screenshot) => (
-          <div key={screenshot.id} className="relative aspect-square">
-            <img
-              src={screenshot.url}
-              alt="Screenshot"
-              className="w-full h-full object-cover rounded-lg"
-            />
-            <button
-              onClick={() => handleDelete(screenshot.id)}
-              className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
-              aria-label="Удалить скриншот"
-            >
-              <span className="material-symbols-outlined text-sm">close</span>
-            </button>
-          </div>
-        ))}
+        {screenshots.map((screenshot) => {
+          const apiUrl = import.meta.env.VITE_API_URL || '';
+          const imgUrl = screenshot.url || `${apiUrl}/static/screenshots/${screenshot.file_path.split('/').pop()}`;
+
+          return (
+            <div key={screenshot.id} className="relative aspect-square">
+              <img
+                src={imgUrl}
+                alt="Screenshot"
+                className="w-full h-full object-cover rounded-lg"
+              />
+              <button
+                onClick={() => handleDelete(screenshot.id)}
+                className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
+                aria-label="Удалить скриншот"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+          );
+        })}
 
         {/* Add Button */}
         {canAddMore && (

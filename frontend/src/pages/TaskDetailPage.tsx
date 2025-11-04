@@ -15,12 +15,7 @@ import { TaskScreenshotsUpload } from '../components/task-detail/TaskScreenshots
 import { TaskSubmissionChecklist } from '../components/task-detail/TaskSubmissionChecklist';
 import { TaskActionsFooter } from '../components/task-detail/TaskActionsFooter';
 import { Modal } from '../components/ui/Modal';
-import type { Config, TaskAssignment } from '../types';
-
-interface Screenshot {
-  id: number;
-  url: string;
-}
+import type { Config, TaskAssignment, Screenshot } from '../types';
 
 export function TaskDetailPage() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
@@ -72,12 +67,7 @@ export function TaskDetailPage() {
 
         // Initialize screenshots from assignment
         if (assignmentData.screenshots && assignmentData.screenshots.length > 0) {
-          setScreenshots(
-            assignmentData.screenshots.map((url, index) => ({
-              id: index + 1,
-              url,
-            }))
-          );
+          setScreenshots(assignmentData.screenshots);
         }
 
         // Initialize phone number if exists

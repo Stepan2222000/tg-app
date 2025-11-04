@@ -25,6 +25,8 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+backend/.env
+# Note: frontend/.env.production SHOULD be committed (contains no secrets)
 
 # Logs
 logs
@@ -51,3 +53,21 @@ build/
 # Claude Code
 .claude/chat_history/
 .claude/temp/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+
+# Backend uploads
+backend/uploads/
+
+# Docker
+.docker/

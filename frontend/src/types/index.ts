@@ -23,6 +23,14 @@ export interface Task {
   updated_at: string;
 }
 
+// Screenshot types
+export interface Screenshot {
+  id: number;
+  file_path: string;
+  url?: string;
+  uploaded_at: string;
+}
+
 // Task Assignment types
 export type TaskAssignmentStatus = 'assigned' | 'submitted' | 'approved' | 'rejected';
 
@@ -33,7 +41,7 @@ export interface TaskAssignment {
   status: TaskAssignmentStatus;
   deadline: string;
   phone_number: string | null;
-  screenshots: string[];
+  screenshots: Screenshot[];
   assigned_at: string;
   submitted_at: string | null;
   created_at: string;

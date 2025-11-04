@@ -11,10 +11,11 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy source code (includes .env.production)
 COPY . .
 
 # Build the application
+# Vite automatically uses .env.production for production builds
 # This creates the /app/dist directory with optimized production build
 RUN npm run build
 

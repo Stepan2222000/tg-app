@@ -36,7 +36,8 @@ export function ReferralsPage() {
           return;
         }
 
-        const data = await apiService.getReferralStats();
+        // Use getReferralList instead of getReferralStats to get full data with referrals array
+        const data = await apiService.getReferralList();
 
         if (isMounted) {
           setStats(data);

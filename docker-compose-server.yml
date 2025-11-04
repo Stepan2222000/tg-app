@@ -67,21 +67,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Cloudflare Tunnel (no warning page, HTTP2 protocol)
-  tunnel:
-    build:
-      context: ./tunnel
-      dockerfile: Dockerfile
-    container_name: avito_tasker_tunnel
-    restart: unless-stopped
-    depends_on:
-      - frontend
-    networks:
-      - avito_tasker_network
-    environment:
-      - TUNNEL_TRANSPORT_PROTOCOL=http2
-    command: tunnel --no-autoupdate --protocol http2 --url http://avito_tasker_frontend:80
-
 networks:
   avito_tasker_network:
     driver: bridge

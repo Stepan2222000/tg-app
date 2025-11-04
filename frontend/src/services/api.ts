@@ -7,12 +7,12 @@ import type {
   TaskAssignment,
   Withdrawal,
   ReferralStats,
-  Referral,
   Config,
   ApiResponse,
   TaskType,
   WithdrawalMethod,
   WithdrawalDetails,
+  Screenshot,
 } from '../types';
 
 class ApiService {
@@ -123,12 +123,12 @@ class ApiService {
   async uploadScreenshot(
     assignmentId: number,
     file: File
-  ): Promise<{ screenshot_id: number }> {
+  ): Promise<Screenshot> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('assignment_id', assignmentId.toString());
 
-    return this.api.post<never, { screenshot_id: number }>(
+    return this.api.post<never, Screenshot>(
       '/api/screenshots/upload',
       formData,
       {
@@ -171,8 +171,8 @@ class ApiService {
     return this.api.get<never, ReferralStats>('/api/referrals/stats');
   }
 
-  async getReferralList(): Promise<Referral[]> {
-    return this.api.get<never, Referral[]>('/api/referrals/list');
+  async getReferralList(): Promise<ReferralStats> {
+    return this.api.get<never, ReferralStats>('/api/referrals/list');
   }
 }
 

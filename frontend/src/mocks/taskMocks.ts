@@ -28,6 +28,7 @@ export const createMockActiveTasks = (): TaskAssignment[] => {
       screenshots: [],
       assigned_at: now.toISOString(),
       submitted_at: null,
+      created_at: now.toISOString(),
       task: {
         id: 101,
         type: 'simple',
@@ -37,6 +38,8 @@ export const createMockActiveTasks = (): TaskAssignment[] => {
           'Здравствуйте! Интересует ваш iPhone. Актуально? Можно посмотреть сегодня?',
         price: 50,
         is_available: false,
+        created_at: now.toISOString(),
+        updated_at: now.toISOString(),
       },
     },
     {
@@ -49,6 +52,7 @@ export const createMockActiveTasks = (): TaskAssignment[] => {
       screenshots: [],
       assigned_at: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(),
       submitted_at: null,
+      created_at: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(),
       task: {
         id: 102,
         type: 'phone',
@@ -58,6 +62,8 @@ export const createMockActiveTasks = (): TaskAssignment[] => {
           'Добрый день! Квартира свободна? Можно уточнить детали по телефону?',
         price: 150,
         is_available: false,
+        created_at: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(),
       },
     },
     {
@@ -70,6 +76,7 @@ export const createMockActiveTasks = (): TaskAssignment[] => {
       screenshots: [],
       assigned_at: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
       submitted_at: null,
+      created_at: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
       task: {
         id: 103,
         type: 'simple',
@@ -78,6 +85,8 @@ export const createMockActiveTasks = (): TaskAssignment[] => {
         message_text: 'Привет! MacBook в отличном состоянии? Торг возможен?',
         price: 50,
         is_available: false,
+        created_at: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
       },
     },
   ];
