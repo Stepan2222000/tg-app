@@ -21,19 +21,21 @@ class Database:
 
     def __init__(self) -> None:
         self.pool: Optional[asyncpg.Pool] = None
-        self.dsn = (
-            f"postgresql://{os.getenv('DATABASE_USER')}:"
-            f"{os.getenv('DATABASE_PASSWORD')}@"
-            f"{os.getenv('DATABASE_HOST')}:"
-            f"{os.getenv('DATABASE_PORT')}/"
-            f"{os.getenv('DATABASE_NAME')}"
-        )
 
     async def connect(self) -> None:
         """Initialize connection pool."""
         try:
+            # Build DSN from environment variables (loaded by config.py)
+            dsn = (
+                f"postgresql://{os.getenv('DATABASE_USER')}:"
+                f"{os.getenv('DATABASE_PASSWORD')}@"
+                f"{os.getenv('DATABASE_HOST')}:"
+                f"{os.getenv('DATABASE_PORT')}/"
+                f"{os.getenv('DATABASE_NAME')}"
+            )
+
             self.pool = await asyncpg.create_pool(
-                self.dsn,
+                dsn,
                 min_size=5,
                 max_size=20,
                 command_timeout=60,

@@ -6,6 +6,13 @@ Handles type conversion from string to int/float.
 
 import os
 from typing import Optional
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file from backend directory
+# Find .env in the backend directory (parent of app/)
+env_path = Path(__file__).parent.parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 
 def get_int_env(key: str, default: Optional[int] = None) -> int:
