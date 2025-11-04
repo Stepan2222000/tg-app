@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { apiService } from '../../services/api';
 import { useNotification } from '../../hooks/useNotification';
+import { logger } from '../../utils/logger';
 
 interface Screenshot {
   id: number;
@@ -69,11 +70,12 @@ export function TaskScreenshotsUpload({
 
       results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-          // API returns only screenshot_id, construct URL
+          // NEW-CRITICAL-B FIX: Use URL from backend response instead of constructing
+          // Backend returns { id, url, file_path, uploaded_at }
           const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
           newScreenshots.push({
-            id: result.value.screenshot_id,
-            url: `${apiUrl}/screenshots/${result.value.screenshot_id}`,
+            id: result.value.id,  // Backend returns 'id', not 'screenshot_id'
+            url: `${apiUrl}${result.value.url}`,  // Use URL from backend (e.g., "/static/screenshots/uuid.jpg")
           });
         } else {
           errors.push(result.reason.message || `Ошибка загрузки файла ${index + 1}`);
@@ -91,7 +93,7 @@ export function TaskScreenshotsUpload({
         errors.forEach((error) => showError(error));
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       showError(error instanceof Error ? error.message : 'Ошибка загрузки');
     } finally {
       setIsUploading(false);
@@ -108,7 +110,7 @@ export function TaskScreenshotsUpload({
       onScreenshotsChange(screenshots.filter((s) => s.id !== screenshotId));
       showSuccess('Скриншот удален');
     } catch (error) {
-      console.error('Delete error:', error);
+      logger.error('Delete error:', error);
       showError('Не удалось удалить скриншот');
     }
   };

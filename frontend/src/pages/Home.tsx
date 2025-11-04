@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { WithdrawalModal } from '../components/WithdrawalModal';
 import { useNotification } from '../hooks/useNotification';
 import { mockUser, mockPendingWithdrawal } from '../mocks/userMocks';
+import { logger } from '../utils/logger';
 import type { User, Withdrawal } from '../types';
 
 export function Home() {
@@ -49,7 +50,7 @@ export function Home() {
         setPendingWithdrawal(pending || null);
       }
     } catch (error) {
-      console.error('Failed to load user data:', error);
+      logger.error('Failed to load user data:', error);
       if (isMountedRef.current) {
         showError(
           error instanceof Error

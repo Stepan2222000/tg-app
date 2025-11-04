@@ -21,7 +21,10 @@ async def get_config() -> Dict[str, Any]:
     Get system configuration (prices, limits, instructions).
 
     This is a PUBLIC endpoint (no authentication required).
-    Returns task prices, limits, and general instructions.
+    Returns only client-facing configuration values.
+
+    NEW-CRITICAL-E FIX: Removed internal business logic parameters
+    (referral_commission, task_lock_hours) that aren't needed by frontend.
 
     Returns:
         {
@@ -29,8 +32,6 @@ async def get_config() -> Dict[str, Any]:
             "phone_task_price": int,
             "min_withdrawal": int,
             "max_active_tasks": int,
-            "referral_commission": float,
-            "task_lock_hours": int,
             "instructions": str
         }
     """
@@ -39,8 +40,6 @@ async def get_config() -> Dict[str, Any]:
         "phone_task_price": config.PHONE_TASK_PRICE,
         "min_withdrawal": config.MIN_WITHDRAWAL,
         "max_active_tasks": config.MAX_ACTIVE_TASKS,
-        "referral_commission": config.REFERRAL_COMMISSION,
-        "task_lock_hours": config.TASK_LOCK_HOURS,
         "instructions": config.GENERAL_INSTRUCTION
     }
 

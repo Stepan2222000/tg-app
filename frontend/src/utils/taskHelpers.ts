@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 /**
  * Генерирует отображаемый ID задачи в формате #A8B12
  * @param id - числовой ID задачи
@@ -57,7 +59,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 
     return successful;
   } catch (error) {
-    console.error('Failed to copy text:', error);
+    logger.error('Failed to copy text:', error);
     return false;
   }
 }

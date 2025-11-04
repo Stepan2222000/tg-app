@@ -6,6 +6,7 @@ import { TaskRequestSection } from '../components/tasks/TaskRequestSection';
 import { ActiveTasksList } from '../components/tasks/ActiveTasksList';
 import { TaskConfirmationModal } from '../components/tasks/TaskConfirmationModal';
 import { mockConfig, createMockActiveTasks } from '../mocks/taskMocks';
+import { logger } from '../utils/logger';
 import type { Config, TaskAssignment, TaskType } from '../types';
 
 export function TasksPage() {
@@ -55,7 +56,7 @@ export function TasksPage() {
         setActiveTasks(tasksData);
       }
     } catch (error) {
-      console.error('Failed to load tasks data:', error);
+      logger.error('Failed to load tasks data:', error);
       if (isMountedRef.current) {
         showError(
           error instanceof Error
@@ -96,7 +97,7 @@ export function TasksPage() {
             setActiveTasks(tasks);
           }
         })
-        .catch(console.error);
+        .catch((error) => logger.error('Failed to refresh tasks:', error));
     }, 30000);
 
     return () => {
@@ -147,7 +148,7 @@ export function TasksPage() {
         }
       }, 100);
     } catch (error) {
-      console.error('Failed to assign task:', error);
+      logger.error('Failed to assign task:', error);
       showError(
         error instanceof Error
           ? error.message

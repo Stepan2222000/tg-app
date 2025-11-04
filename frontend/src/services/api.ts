@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from 'axios';
 import { telegramService } from './telegram';
+import { logger } from '../utils/logger';
 import type {
   User,
   Task,
@@ -41,9 +42,31 @@ class ApiService {
     this.api.interceptors.response.use(
       (response) => response.data,
       (error) => {
+        // NEW-CRITICAL-C FIX: Handle 401 (initData expired)
+        if (error.response?.status === 401) {
+          const message = error.response?.data?.detail || 'Сессия истекла';
+
+          // Show Telegram alert and close app
+          const tg = (window as any).Telegram?.WebApp;
+          if (tg) {
+            tg.showAlert(
+              `${message}. Перезапустите приложение.`,
+              () => {
+                tg.close();
+              }
+            );
+          } else {
+            // Fallback for non-Telegram environment (development)
+            logger.error('Session expired:', message);
+            alert(`${message}. Перезапустите приложение.`);
+          }
+
+          return Promise.reject(new Error('Session expired'));
+        }
+
         const errorMessage =
-          error.response?.data?.error || error.message || 'Произошла ошибка';
-        console.error('API Error:', errorMessage);
+          error.response?.data?.detail || error.response?.data?.error || error.message || 'Произошла ошибка';
+        logger.error('API Error:', errorMessage);
         return Promise.reject(new Error(errorMessage));
       }
     );

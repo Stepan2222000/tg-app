@@ -17,7 +17,14 @@ CREATE TABLE IF NOT EXISTS users (
     referral_balance INTEGER DEFAULT 0 NOT NULL,      -- in rubles
     referred_by BIGINT,                                -- FK to users.telegram_id (immutable after first set)
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    FOREIGN KEY (referred_by) REFERENCES users(telegram_id) ON DELETE SET NULL
+    FOREIGN KEY (referred_by) REFERENCES users(telegram_id) ON DELETE SET NULL,
+    -- NEW-CRITICAL-3 FIX: Prevent integer overflow and negative balances
+    -- PostgreSQL INTEGER max: 2,147,483,647
+    -- Limit to 2B rubles (safe margin) to prevent overflow
+    CONSTRAINT check_main_balance_range CHECK (main_balance >= 0 AND main_balance <= 2000000000),
+    CONSTRAINT check_referral_balance_range CHECK (referral_balance >= 0 AND referral_balance <= 2000000000),
+    -- NEW-HIGH-9 FIX: Prevent self-referral at database level
+    CONSTRAINT check_no_self_referral CHECK (referred_by IS NULL OR referred_by != telegram_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -69,6 +76,11 @@ CREATE INDEX IF NOT EXISTS idx_task_assignments_status ON task_assignments(statu
 CREATE INDEX IF NOT EXISTS idx_task_assignments_deadline ON task_assignments(deadline);
 CREATE INDEX IF NOT EXISTS idx_task_assignments_assigned_at ON task_assignments(assigned_at);
 
+-- CRITICAL-7: Prevent user from taking same task multiple times simultaneously
+CREATE UNIQUE INDEX IF NOT EXISTS idx_task_assignments_user_task_active
+ON task_assignments(user_id, task_id)
+WHERE status = 'assigned';
+
 -- ============================================================================
 -- TABLE: screenshots
 -- Separate table with (id, assignment_id FK, file_path, uploaded_at)
@@ -106,6 +118,9 @@ CREATE TABLE IF NOT EXISTS withdrawals (
 CREATE INDEX IF NOT EXISTS idx_withdrawals_user_id ON withdrawals(user_id);
 CREATE INDEX IF NOT EXISTS idx_withdrawals_status ON withdrawals(status);
 CREATE INDEX IF NOT EXISTS idx_withdrawals_created_at ON withdrawals(created_at);
+-- NEW-CRITICAL-5 FIX: Composite index for efficient queries filtering by both user_id and status
+-- Used in withdrawal creation query: WHERE user_id = X AND status = 'pending'
+CREATE INDEX IF NOT EXISTS idx_withdrawals_user_status ON withdrawals(user_id, status);
 
 -- ============================================================================
 -- TABLE: referral_earnings

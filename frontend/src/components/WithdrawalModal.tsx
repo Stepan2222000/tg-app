@@ -6,6 +6,7 @@ import { apiService } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
 import { formatCurrency } from '../utils/formatters';
 import { validateAmount, validateCardNumber, validatePhone } from '../utils/validators';
+import { logger } from '../utils/logger';
 import type { WithdrawalMethod } from '../types';
 
 interface WithdrawalModalProps {
@@ -55,7 +56,7 @@ export function WithdrawalModal({
           setMinWithdrawal(config.min_withdrawal);
         }
       } catch (error) {
-        console.error('Failed to load config:', error);
+        logger.error('Failed to load config:', error);
       }
     };
 

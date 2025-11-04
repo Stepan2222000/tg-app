@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 /**
  * Copies text to clipboard with fallback for older browsers
  * @param text - Text to copy to clipboard
@@ -11,7 +13,7 @@ export async function copyToClipboard(text: string): Promise<void> {
       return;
     } catch (error) {
       // If modern API fails, try fallback
-      console.warn('Clipboard API failed, trying fallback:', error);
+      logger.warn('Clipboard API failed, trying fallback:', error);
     }
   }
 

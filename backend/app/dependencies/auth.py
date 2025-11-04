@@ -7,11 +7,18 @@ Validates Telegram Web App initData from Authorization header.
 from typing import Dict, Any
 from fastapi import Request, HTTPException, status
 import logging
+import hashlib
 
 from app.utils.telegram import validate_init_data
 from app.utils.config import config
 
 logger = logging.getLogger(__name__)
+
+
+# CRITICAL-6 FIX: Hash user ID for GDPR-compliant logging
+def hash_user_id(telegram_id: int) -> str:
+    """Create privacy-safe user identifier for logs (GDPR compliant)."""
+    return hashlib.sha256(str(telegram_id).encode()).hexdigest()[:12]
 
 
 async def get_current_user(request: Request) -> Dict[str, Any]:
@@ -70,7 +77,8 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
             init_data=init_data,
             bot_token=config.TELEGRAM_BOT_TOKEN
         )
-        logger.debug(f"User authenticated: {user_data['telegram_id']}")
+        # CRITICAL-6 FIX: Hash telegram_id for GDPR-compliant logging
+        logger.debug(f"User authenticated: {hash_user_id(user_data['telegram_id'])}")
         return user_data
     except HTTPException:
         # Re-raise HTTPException from validate_init_data

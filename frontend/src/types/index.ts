@@ -85,9 +85,11 @@ export interface Config {
   phone_task_price: number;
   min_withdrawal: number;
   max_active_tasks: number;
-  referral_commission: number;
-  task_lock_hours: number;
   instructions: string;
+  // NEW-CRITICAL-E FIX: These fields removed from public API
+  // (kept optional for backwards compatibility with mocks)
+  referral_commission?: number;
+  task_lock_hours?: number;
 }
 
 // API Response types

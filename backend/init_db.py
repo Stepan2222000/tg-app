@@ -87,12 +87,14 @@ async def init_database():
         print("=" * 80 + "\n")
 
         for table in sorted(expected_tables):
-            columns = await connection.fetch(f"""
+            # NEW-CRITICAL-1 FIX: Use parameterized query instead of f-string to prevent SQL injection
+            # Even though `table` is from hardcoded set, this is dangerous pattern to avoid
+            columns = await connection.fetch("""
                 SELECT column_name, data_type, is_nullable
                 FROM information_schema.columns
-                WHERE table_name = '{table}'
+                WHERE table_name = $1
                 ORDER BY ordinal_position
-            """)
+            """, table)
 
             print(f"📊 {table}:")
             for col in columns:

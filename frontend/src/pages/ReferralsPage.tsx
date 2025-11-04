@@ -6,6 +6,7 @@ import { formatCurrency } from '../utils/formatters';
 import { copyToClipboard } from '../utils/clipboard';
 import { mockReferralStats } from '../mocks/referralMocks';
 import { ReferralHelpModal } from '../components/ReferralHelpModal';
+import { logger } from '../utils/logger';
 import type { ReferralStats } from '../types';
 
 export function ReferralsPage() {
@@ -41,7 +42,7 @@ export function ReferralsPage() {
           setStats(data);
         }
       } catch (error) {
-        console.error('Failed to load referral stats:', error);
+        logger.error('Failed to load referral stats:', error);
         if (isMounted) {
           showError(
             error instanceof Error
@@ -81,7 +82,7 @@ export function ReferralsPage() {
       await copyToClipboard(link);
       showSuccess('Ссылка скопирована');
     } catch (error) {
-      console.error('Failed to copy link:', error);
+      logger.error('Failed to copy link:', error);
       showError('Не удалось скопировать ссылку');
     }
   };

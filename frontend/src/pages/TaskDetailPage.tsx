@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
 import { validatePhone } from '../utils/validators';
 import { generateDisplayId } from '../utils/taskHelpers';
+import { logger } from '../utils/logger';
 import { TaskHeader } from '../components/task-detail/TaskHeader';
 import { TaskTimerCard } from '../components/task-detail/TaskTimerCard';
 import { TaskRewardCard } from '../components/task-detail/TaskRewardCard';
@@ -39,6 +40,10 @@ export function TaskDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+
+  // NEW-CRITICAL FIX: Ref for synchronous deduplication
+  // useState is async, so double-clicks can bypass isSubmitting check
+  const submitInProgressRef = useRef(false);
 
   // Load data
   useEffect(() => {
@@ -80,7 +85,7 @@ export function TaskDetailPage() {
           setPhoneNumber(assignmentData.phone_number);
         }
       } catch (error) {
-        console.error('Failed to load task details:', error);
+        logger.error('Failed to load task details:', error);
         showError(
           error instanceof Error
             ? error.message
@@ -144,6 +149,13 @@ export function TaskDetailPage() {
   const handleSubmit = async () => {
     if (!assignment || !canSubmit) return;
 
+    // NEW-CRITICAL FIX: Synchronous deduplication check
+    // Prevents double-submit from double-click
+    if (submitInProgressRef.current) {
+      logger.warn('Submit already in progress, ignoring duplicate request');
+      return;
+    }
+
     // Final validation
     if (requiresPhoneNumber && !validatePhone(phoneNumber)) {
       setPhoneError('Введите корректный номер телефона');
@@ -151,6 +163,8 @@ export function TaskDetailPage() {
       return;
     }
 
+    // Mark request as in-progress (synchronous)
+    submitInProgressRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -162,11 +176,13 @@ export function TaskDetailPage() {
       showSuccess('Задача отправлена на модерацию (~2 часа)');
       navigate('/tasks');
     } catch (error) {
-      console.error('Failed to submit task:', error);
+      logger.error('Failed to submit task:', error);
       showError(
         error instanceof Error ? error.message : 'Не удалось отправить задачу'
       );
     } finally {
+      // Reset both state and ref
+      submitInProgressRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -184,7 +200,7 @@ export function TaskDetailPage() {
       showInfo('Задача отменена');
       navigate('/tasks');
     } catch (error) {
-      console.error('Failed to cancel task:', error);
+      logger.error('Failed to cancel task:', error);
       showError(
         error instanceof Error ? error.message : 'Не удалось отменить задачу'
       );
