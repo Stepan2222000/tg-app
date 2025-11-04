@@ -19,6 +19,8 @@ export interface Task {
   message_text: string;
   price: number;
   is_available: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 // Task Assignment types
@@ -34,6 +36,7 @@ export interface TaskAssignment {
   screenshots: string[];
   assigned_at: string;
   submitted_at: string | null;
+  created_at: string;
   task?: Task; // Populated task data
 }
 
