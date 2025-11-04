@@ -64,6 +64,7 @@ export interface Withdrawal {
 // Referral types
 export interface Referral {
   telegram_id: number;
+  username?: string;
   simple_tasks: number;
   phone_tasks: number;
   earnings: number;

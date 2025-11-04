@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { Toast } from '../components/ui/Toast';
 
 type NotificationType = 'success' | 'error' | 'info';
@@ -19,15 +19,30 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notification, setNotification] = useState<Notification | null>(null);
+  const timeoutRef = useRef<number | undefined>(undefined);
 
   const showNotification = useCallback((message: string, type: NotificationType) => {
+    // Clear previous timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     const id = Date.now();
     setNotification({ message, type, id });
 
     // Автоматическое скрытие через 3 секунды
-    setTimeout(() => {
+    timeoutRef.current = window.setTimeout(() => {
       setNotification((current) => (current?.id === id ? null : current));
     }, 3000);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, []);
 
   const showSuccess = useCallback(

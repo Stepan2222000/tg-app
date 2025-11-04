@@ -6,6 +6,7 @@ import type {
   TaskAssignment,
   Withdrawal,
   ReferralStats,
+  Referral,
   Config,
   ApiResponse,
   TaskType,
@@ -145,6 +146,10 @@ class ApiService {
 
   async getReferralStats(): Promise<ReferralStats> {
     return this.api.get<never, ReferralStats>('/api/referrals/stats');
+  }
+
+  async getReferralList(): Promise<Referral[]> {
+    return this.api.get<never, Referral[]>('/api/referrals/list');
   }
 }
 

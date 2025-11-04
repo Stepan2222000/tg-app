@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
 import { TaskRequestSection } from '../components/tasks/TaskRequestSection';
 import { ActiveTasksList } from '../components/tasks/ActiveTasksList';
 import { TaskConfirmationModal } from '../components/tasks/TaskConfirmationModal';
+import { mockConfig, createMockActiveTasks } from '../mocks/taskMocks';
 import type { Config, TaskAssignment, TaskType } from '../types';
 
 export function TasksPage() {
@@ -23,42 +24,85 @@ export function TasksPage() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedTaskType, setSelectedTaskType] = useState<TaskType | null>(null);
 
+  const useMockData = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  const isMountedRef = useRef(true);
+  const scrollTimeoutRef = useRef<number | undefined>(undefined);
+
   // Load initial data
   const loadData = useCallback(async () => {
     try {
+      if (isMountedRef.current) {
+        setIsLoading(true);
+      }
+
+      if (useMockData) {
+        // Use mock data from file
+        if (isMountedRef.current) {
+          setConfig(mockConfig);
+          setActiveTasks(createMockActiveTasks());
+          setIsLoading(false);
+        }
+        return;
+      }
+
       const [configData, tasksData] = await Promise.all([
         apiService.getConfig(),
         apiService.getActiveTasks(),
       ]);
 
-      setConfig(configData);
-      setActiveTasks(tasksData);
+      if (isMountedRef.current) {
+        setConfig(configData);
+        setActiveTasks(tasksData);
+      }
     } catch (error) {
       console.error('Failed to load tasks data:', error);
-      showError(
-        error instanceof Error
-          ? error.message
-          : 'Не удалось загрузить данные. Попробуйте обновить страницу.'
-      );
+      if (isMountedRef.current) {
+        showError(
+          error instanceof Error
+            ? error.message
+            : 'Не удалось загрузить данные. Попробуйте обновить страницу.'
+        );
+      }
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
-  }, [showError]);
+  }, [showError, useMockData]);
 
   // Initial load
   useEffect(() => {
+    isMountedRef.current = true;
     loadData();
+
+    return () => {
+      isMountedRef.current = false;
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
   }, [loadData]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
+    if (useMockData) return; // Don't auto-refresh in mock mode
+
     const interval = setInterval(() => {
       // Silent refresh (no loading state)
-      apiService.getActiveTasks().then(setActiveTasks).catch(console.error);
+      apiService
+        .getActiveTasks()
+        .then((tasks) => {
+          if (isMountedRef.current) {
+            setActiveTasks(tasks);
+          }
+        })
+        .catch(console.error);
     }, 30000);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [useMockData]);
 
   // Handle request task button click
   const handleRequestTask = (type: TaskType) => {
@@ -91,10 +135,15 @@ export function TasksPage() {
       setSelectedTaskType(null);
 
       // Scroll to active tasks section
-      setTimeout(() => {
-        const activeTasksSection = document.getElementById('active-tasks');
-        if (activeTasksSection) {
-          activeTasksSection.scrollIntoView({ behavior: 'smooth' });
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = window.setTimeout(() => {
+        if (isMountedRef.current) {
+          const activeTasksSection = document.getElementById('active-tasks');
+          if (activeTasksSection) {
+            activeTasksSection.scrollIntoView({ behavior: 'smooth' });
+          }
         }
       }, 100);
     } catch (error) {
@@ -122,7 +171,11 @@ export function TasksPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
+      <div
+        className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center"
+        role="status"
+        aria-label="Загрузка данных"
+      >
         <span className="material-symbols-outlined text-5xl text-primary animate-spin">
           progress_activity
         </span>
@@ -142,6 +195,7 @@ export function TasksPage() {
           <div className="flex items-center gap-3 mb-2">
             <button
               onClick={() => navigate('/')}
+              aria-label="Вернуться на главную"
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               <span className="material-symbols-outlined text-2xl text-gray-600 dark:text-gray-400">
