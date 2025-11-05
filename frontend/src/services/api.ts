@@ -24,6 +24,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
+      timeout: 30000, // 30 seconds timeout to prevent infinite loading
     });
 
     // Request interceptor to add Authorization header

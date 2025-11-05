@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
+import { telegramService } from '../services/telegram';
 import { useNotification } from '../hooks/useNotification';
 import { formatCurrency } from '../utils/formatters';
 import { copyToClipboard } from '../utils/clipboard';
@@ -14,6 +15,7 @@ export function ReferralsPage() {
   const { showSuccess, showError } = useNotification();
 
   const [stats, setStats] = useState<ReferralStats | null>(null);
+  const [referralLink, setReferralLink] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
@@ -22,29 +24,34 @@ export function ReferralsPage() {
   const botUsername = import.meta.env.VITE_BOT_USERNAME || 'avito_tasker_bot';
   const useMockData = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
-  // Load referral stats
+  // Load referral stats and link
   useEffect(() => {
     let isMounted = true;
 
-    const loadStats = async () => {
+    const loadData = async () => {
       try {
         if (useMockData) {
           // Use mock data from file
           if (isMounted) {
             setStats(mockReferralStats);
+            setReferralLink(`https://t.me/${botUsername}?start=ref_123456789`);
             setIsLoading(false);
           }
           return;
         }
 
-        // Use getReferralList instead of getReferralStats to get full data with referrals array
-        const data = await apiService.getReferralList();
+        // Load stats and referral link in parallel
+        const [statsData, linkData] = await Promise.all([
+          apiService.getReferralList(),
+          apiService.getReferralLink()
+        ]);
 
         if (isMounted) {
-          setStats(data);
+          setStats(statsData);
+          setReferralLink(linkData.link);
         }
       } catch (error) {
-        logger.error('Failed to load referral stats:', error);
+        logger.error('Failed to load referral data:', error);
         if (isMounted) {
           setHasError(true);
           showError(
@@ -60,33 +67,28 @@ export function ReferralsPage() {
       }
     };
 
-    loadStats();
+    loadData();
 
     return () => {
       isMounted = false;
     };
-  }, [showError, useMockData]);
+  }, [showError, useMockData, botUsername]);
 
   // Copy referral link to clipboard
   const handleCopyLink = async () => {
-    if (!stats) return;
+    if (!referralLink) return;
 
     try {
-      let link: string;
-
-      if (useMockData) {
-        // Mock link for visualization
-        link = `https://t.me/${botUsername}?start=ref_123456789`;
-      } else {
-        const response = await apiService.getReferralLink();
-        link = response.link;
-      }
-
-      await copyToClipboard(link);
+      // Try to copy using clipboard methods
+      await copyToClipboard(referralLink);
       showSuccess('Ссылка скопирована');
     } catch (error) {
-      logger.error('Failed to copy link:', error);
-      showError('Не удалось скопировать ссылку');
+      // Fallback: Show Telegram popup with full link for manual copying
+      logger.warn('Clipboard copy failed, showing Telegram popup:', error);
+      telegramService.showCopyableText(
+        referralLink,
+        'Автоматическое копирование не сработало.\n\nДолго нажмите на ссылку для копирования:'
+      );
     }
   };
 
@@ -207,13 +209,14 @@ export function ReferralsPage() {
           <p className="text-base font-medium text-gray-900 dark:text-gray-100">
             Ваша уникальная ссылка
           </p>
-          <p className="mt-2 text-sm text-text-muted dark:text-text-muted-dark break-all">
-            https://t.me/{botUsername}?start=ref_...
+          <p className="mt-2 text-xs text-text-muted dark:text-text-muted-dark break-all leading-relaxed">
+            {referralLink || 'Загрузка...'}
           </p>
           <button
             onClick={handleCopyLink}
+            disabled={!referralLink}
             aria-label="Скопировать реферальную ссылку"
-            className="mt-4 flex min-w-[120px] max-w-[480px] w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
+            className="mt-4 flex min-w-[120px] max-w-[480px] w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined text-base" aria-hidden="true">
               content_copy

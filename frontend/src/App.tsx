@@ -20,10 +20,18 @@ function App() {
         await apiService.initUser();
         logger.log('User initialized successfully');
       } catch (error) {
+        // Log error but don't block app loading
         logger.error('Failed to initialize user:', error);
+
+        // If it's a timeout or network error, the user can still use the app
+        // Individual pages will handle their own data loading
+        if (error instanceof Error) {
+          logger.warn('App will continue loading despite init error:', error.message);
+        }
       }
     };
 
+    // Don't await - let it run in background
     initUser();
 
     // Get user data for debugging (dev only)

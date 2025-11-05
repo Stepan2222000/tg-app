@@ -134,6 +134,14 @@ class TelegramService {
   close(): void {
     this.webApp.close();
   }
+
+  /**
+   * Show copyable text via Telegram alert
+   * Useful when clipboard API doesn't work in WebView
+   */
+  showCopyableText(text: string, message: string = 'Скопируйте ссылку:'): void {
+    this.webApp.showAlert(`${message}\n\n${text}`);
+  }
 }
 
 // Export singleton instance
