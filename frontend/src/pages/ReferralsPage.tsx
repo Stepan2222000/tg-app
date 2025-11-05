@@ -119,14 +119,14 @@ export function ReferralsPage() {
             <button
               onClick={handleBack}
               aria-label="Вернуться на главную страницу"
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <span className="material-symbols-outlined" aria-hidden="true">
                 arrow_back
               </span>
             </button>
           </div>
-          <h1 className="flex-1 text-center text-lg font-bold leading-tight tracking-[-0.015em] text-text-primary-light dark:text-text-primary-dark">
+          <h1 className="flex-1 text-center text-lg font-bold leading-tight tracking-[-0.015em] text-gray-900 dark:text-gray-100">
             Реферальная программа
           </h1>
           <div className="flex w-12 items-center justify-end"></div>
@@ -141,10 +141,10 @@ export function ReferralsPage() {
             <span className="material-symbols-outlined text-6xl text-red-500 mb-4" aria-hidden="true">
               error
             </span>
-            <h2 className="text-xl font-bold text-text-primary-light dark:text-text-primary-dark mb-2">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               Не удалось загрузить данные
             </h2>
-            <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-6">
+            <p className="text-sm text-text-muted dark:text-text-muted-dark mb-6">
               Произошла ошибка при загрузке статистики рефералов. Проверьте подключение к интернету и попробуйте снова.
             </p>
             <button
@@ -177,21 +177,21 @@ export function ReferralsPage() {
           <button
             onClick={handleBack}
             aria-label="Вернуться на главную страницу"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <span className="material-symbols-outlined" aria-hidden="true">
               arrow_back
             </span>
           </button>
         </div>
-        <h1 className="flex-1 text-center text-lg font-bold leading-tight tracking-[-0.015em] text-text-primary-light dark:text-text-primary-dark">
+        <h1 className="flex-1 text-center text-lg font-bold leading-tight tracking-[-0.015em] text-gray-900 dark:text-gray-100">
           Реферальная программа
         </h1>
         <div className="flex w-12 items-center justify-end">
           <button
             onClick={() => setIsHelpModalOpen(true)}
             aria-label="Показать справку о реферальной программе"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <span className="material-symbols-outlined" aria-hidden="true">
               help
@@ -204,10 +204,10 @@ export function ReferralsPage() {
       <main className="flex flex-1 flex-col items-center px-4 pb-8">
         {/* Referral Link Card */}
         <div className="flex w-full max-w-md flex-col items-center justify-start rounded-xl bg-card-light dark:bg-card-dark p-6 text-center shadow-md">
-          <p className="text-base font-medium text-text-primary-light dark:text-text-primary-dark">
+          <p className="text-base font-medium text-gray-900 dark:text-gray-100">
             Ваша уникальная ссылка
           </p>
-          <p className="mt-2 text-sm text-text-secondary-light dark:text-text-secondary-dark break-all">
+          <p className="mt-2 text-sm text-text-muted dark:text-text-muted-dark break-all">
             https://t.me/{botUsername}?start=ref_...
           </p>
           <button
@@ -226,17 +226,17 @@ export function ReferralsPage() {
         <div className="mt-4 grid w-full max-w-md grid-cols-2 gap-4">
           {/* Total Referrals */}
           <div className="flex flex-col items-center gap-1 rounded-xl bg-card-light dark:bg-card-dark p-4 text-center shadow-md">
-            <p className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+            <p className="text-sm font-medium text-text-muted dark:text-text-muted-dark">
               Приглашено друзей
             </p>
-            <p className="text-2xl font-bold leading-tight tracking-tight text-text-primary-light dark:text-text-primary-dark">
+            <p className="text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-100">
               {stats.total_referrals}
             </p>
           </div>
 
           {/* Total Earnings */}
           <div className="flex flex-col items-center gap-1 rounded-xl bg-card-light dark:bg-card-dark p-4 text-center shadow-md">
-            <p className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+            <p className="text-sm font-medium text-text-muted dark:text-text-muted-dark">
               Ваш заработок
             </p>
             <p className="text-2xl font-bold leading-tight tracking-tight text-primary">
@@ -247,7 +247,7 @@ export function ReferralsPage() {
 
         {/* Referrals List or Empty State */}
         <div className="w-full max-w-md mt-8">
-          <h2 className="text-text-primary-light dark:text-text-primary-dark text-xl font-bold leading-tight tracking-[-0.015em] pb-3 text-center">
+          <h2 className="text-gray-900 dark:text-gray-100 text-xl font-bold leading-tight tracking-[-0.015em] pb-3 text-center">
             Ваши рефералы
           </h2>
 
@@ -260,12 +260,12 @@ export function ReferralsPage() {
                   className="flex items-center gap-4 rounded-xl bg-card-light dark:bg-card-dark p-4 shadow-md"
                 >
                   <div className="flex-1">
-                    <p className="text-text-primary-light dark:text-text-primary-dark text-base font-medium leading-normal">
+                    <p className="text-gray-900 dark:text-gray-100 text-base font-medium leading-normal">
                       {referral.username
                         ? `@${referral.username}`
                         : `ID ${referral.telegram_id}`}
                     </p>
-                    <p className="text-text-secondary-light dark:text-text-secondary-dark text-sm font-normal leading-normal">
+                    <p className="text-text-muted dark:text-text-muted-dark text-sm font-normal leading-normal">
                       Обычные: {referral.simple_tasks}, С номером:{' '}
                       {referral.phone_tasks}
                     </p>
@@ -286,10 +286,10 @@ export function ReferralsPage() {
               <span className="material-symbols-outlined text-5xl text-primary" aria-hidden="true">
                 group_add
               </span>
-              <h3 className="mt-4 text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+              <h3 className="mt-4 text-lg font-bold text-gray-900 dark:text-gray-100">
                 Пока нет рефералов
               </h3>
-              <p className="mt-1 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+              <p className="mt-1 text-sm text-text-muted dark:text-text-muted-dark">
                 Поделитесь ссылкой с друзьями и начните зарабатывать вместе!
               </p>
             </div>
