@@ -257,8 +257,8 @@ if os.getenv('ENVIRONMENT') == 'development':
     allowed_origins = [
         "http://localhost:5173",  # Vite dev server
         "http://127.0.0.1:5173",
-        "https://*.ngrok-free.dev",  # ngrok tunnels
-        "https://*.loca.lt"  # localtunnel
+        "https://*.loca.lt",  # localtunnel
+        "https://*.trycloudflare.com"  # Cloudflare tunnel
     ]
 ```
 

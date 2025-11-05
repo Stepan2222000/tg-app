@@ -64,8 +64,8 @@ if os.getenv('ENVIRONMENT') == 'development':
         "http://localhost:5173",      # Vite dev server
         "http://127.0.0.1:5173"
     ]
-    # Regex for development tunnels (ngrok, localtunnel)
-    allow_origin_regex = r"https://.*\.(ngrok-free\.app|ngrok\.io|loca\.lt)"
+    # Regex for development tunnels (localtunnel, Cloudflare)
+    allow_origin_regex = r"https://.*\.(loca\.lt|trycloudflare\.com)"
 else:
     # In production, only allow Telegram's WebApp origin
     # Telegram Mini Apps run on https://web.telegram.org

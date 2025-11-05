@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Avito Tasker - Production Startup with Ngrok Tunnel
+# Avito Tasker - Production Startup with Local Tunnel
 # This script starts production and creates a public URL for Telegram
 
 set -e  # Exit on error
@@ -17,29 +17,26 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Check if ngrok is installed
-NGROK_INSTALLED=false
-if command -v ngrok &> /dev/null; then
-    NGROK_INSTALLED=true
+# Check if a tunnel command is available (localtunnel via global install or npx)
+LT_COMMAND=()
+if command -v localtunnel &> /dev/null; then
+    LT_COMMAND=(localtunnel)
+elif command -v npx &> /dev/null; then
+    LT_COMMAND=(npx localtunnel)
 fi
 
-# Check if localtunnel is available
-LT_INSTALLED=false
-if command -v npx &> /dev/null; then
-    LT_INSTALLED=true
-fi
-
-if [ "$NGROK_INSTALLED" = false ] && [ "$LT_INSTALLED" = false ]; then
-    echo -e "${RED}Error: Neither ngrok nor localtunnel is available${NC}"
+if [ ${#LT_COMMAND[@]} -eq 0 ]; then
+    echo -e "${RED}Error: Localtunnel is not available${NC}"
     echo ""
-    echo "Install one of them:"
-    echo "  Ngrok:        brew install ngrok  (or download from ngrok.com)"
-    echo "  Localtunnel:  npm install -g localtunnel"
+    echo "Install it globally or ensure npx is available:"
+    echo "  npm install -g localtunnel"
     exit 1
 fi
 
+echo -e "${BLUE}Using ${LT_COMMAND[*]} for tunnel${NC}"
+
 # Step 1: Start production
-echo -e "${YELLOW}[1/3] Starting production containers...${NC}"
+echo -e "${YELLOW}[1/2] Starting production containers...${NC}"
 ./start-production.sh
 
 echo ""
@@ -49,19 +46,9 @@ echo ""
 # Wait a bit for services to stabilize
 sleep 3
 
-# Step 2: Choose tunnel service
-TUNNEL_CMD=""
-if [ "$NGROK_INSTALLED" = true ]; then
-    TUNNEL_CMD="ngrok"
-    echo -e "${BLUE}Using ngrok for tunnel${NC}"
-elif [ "$LT_INSTALLED" = true ]; then
-    TUNNEL_CMD="localtunnel"
-    echo -e "${BLUE}Using localtunnel for tunnel${NC}"
-fi
-
-# Step 3: Start tunnel
+# Step 2: Start tunnel
 echo ""
-echo -e "${YELLOW}[2/3] Starting tunnel on port 80...${NC}"
+echo -e "${YELLOW}[2/2] Starting tunnel on port 80...${NC}"
 echo ""
 echo -e "${BLUE}================================================================${NC}"
 echo -e "${BLUE}                    TUNNEL STARTING${NC}"
@@ -89,8 +76,4 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Start the tunnel
-if [ "$TUNNEL_CMD" = "ngrok" ]; then
-    ngrok http 80
-elif [ "$TUNNEL_CMD" = "localtunnel" ]; then
-    npx localtunnel --port 80
-fi
+"${LT_COMMAND[@]}" --port 80

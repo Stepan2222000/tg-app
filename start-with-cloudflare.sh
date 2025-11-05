@@ -11,14 +11,17 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Step 1: Stop development processes
-echo -e "${YELLOW}[1/4] Stopping old processes...${NC}"
-pkill -f "npm run dev" 2>/dev/null
-pkill -f "uvicorn" 2>/dev/null
-pkill -f "ngrok" 2>/dev/null
-pkill -f "localtunnel" 2>/dev/null
-docker compose down 2>/dev/null
-echo -e "${GREEN}✓ Old processes stopped${NC}"
+# Step 1: Stop all old processes (full cleanup)
+echo -e "${YELLOW}[1/4] Stopping all old processes...${NC}"
+pkill -f "npm run dev" 2>/dev/null || true
+pkill -f "uvicorn" 2>/dev/null || true
+pkill -f "ngrok" 2>/dev/null || true
+pkill -f "localtunnel" 2>/dev/null || true
+pkill -f "cloudflared" 2>/dev/null || true
+pkill -f "bot.py" 2>/dev/null || true
+docker compose down 2>/dev/null || true
+sleep 2
+echo -e "${GREEN}✓ All old processes stopped${NC}"
 echo ""
 
 # Step 2: Build and start Docker containers

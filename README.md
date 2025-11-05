@@ -340,16 +340,17 @@ Use the interactive API docs:
 ### Frontend Testing
 
 1. Run backend and frontend locally
-2. Use Telegram Bot's test environment or ngrok for testing:
+2. Use Telegram Bot's test environment or create a temporary public URL:
 
 ```bash
-# Install ngrok
-npm install -g ngrok
+# Option A: Localtunnel
+npm install -g localtunnel
+localtunnel --port 5173
 
-# Expose local frontend to internet
-ngrok http 5173
+# Option B: Cloudflare (requires Docker)
+./start-with-cloudflare.sh
 
-# Use the ngrok URL in BotFather's Mini App settings
+# Use the generated URL in BotFather's Mini App settings
 ```
 
 ### End-to-End Testing
