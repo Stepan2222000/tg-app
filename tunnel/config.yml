@@ -1,0 +1,14 @@
+# Cloudflare Tunnel Configuration for Avito Tasker
+# Named tunnel with permanent domain: miniapp.cheapdomain2025.site
+
+tunnel: ebab442b-84f1-440e-a05c-28d545c41615
+credentials-file: /etc/cloudflared/credentials.json
+
+# Ingress rules: route traffic from domain to internal services
+ingress:
+  # Route miniapp.cheapdomain2025.site to frontend service
+  - hostname: miniapp.cheapdomain2025.site
+    service: http://avito_tasker_frontend:80
+
+  # Catch-all rule (required by cloudflared)
+  - service: http_status:404

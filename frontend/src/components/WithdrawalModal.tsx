@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Modal } from './ui/Modal';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
+import { Select } from './ui/Select';
+import { MethodToggle } from './ui/MethodToggle';
 import { apiService } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
 import { formatCurrency } from '../utils/formatters';
@@ -18,12 +20,12 @@ interface WithdrawalModalProps {
 }
 
 const BANKS = [
-  'Сбербанк',
-  'Тинькофф',
-  'Альфа-Банк',
-  'ВТБ',
-  'Райффайзен',
-  'Открытие',
+  { value: 'Сбербанк', label: 'Сбербанк', icon: '🟢' },
+  { value: 'Тинькофф', label: 'Тинькофф', icon: '🟡' },
+  { value: 'Альфа-Банк', label: 'Альфа-Банк', icon: '🔴' },
+  { value: 'ВТБ', label: 'ВТБ', icon: '🔵' },
+  { value: 'Райффайзен', label: 'Райффайзен', icon: '🟠' },
+  { value: 'Открытие', label: 'Открытие', icon: '🟣' },
 ];
 
 export function WithdrawalModal({
@@ -176,11 +178,15 @@ export function WithdrawalModal({
             onChange={setAmount}
             placeholder="Введите сумму"
             error={errors.amount}
+            icon="💰"
+            disabled={submitting}
           />
           <button
             onClick={handleWithdrawAll}
-            className="text-primary text-sm font-medium mt-2 hover:underline"
+            disabled={submitting}
+            className="text-primary text-sm font-semibold mt-2 hover:underline transition-all hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
           >
+            <span className="material-symbols-outlined text-base">rocket_launch</span>
             Вывести всю сумму
           </button>
         </div>
@@ -190,28 +196,7 @@ export function WithdrawalModal({
           <label className="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-3">
             Способ вывода
           </label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMethod('card')}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
-                method === 'card'
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
-            >
-              Банковская карта
-            </button>
-            <button
-              onClick={() => setMethod('sbp')}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
-                method === 'sbp'
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
-            >
-              СБП
-            </button>
-          </div>
+          <MethodToggle method={method} onChange={setMethod} disabled={submitting} />
         </div>
 
         {/* Dynamic Fields */}
@@ -224,6 +209,7 @@ export function WithdrawalModal({
               placeholder="0000 0000 0000 0000"
               mask="card"
               error={errors.cardNumber}
+              disabled={submitting}
             />
             <Input
               value={cardholderName}
@@ -231,34 +217,21 @@ export function WithdrawalModal({
               label="ФИО получателя"
               placeholder="Иванов Иван Иванович"
               error={errors.cardholderName}
+              icon="👤"
+              disabled={submitting}
             />
           </>
         ) : (
           <>
-            <div>
-              <label className="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-2">
-                Банк получателя
-              </label>
-              <select
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 font-display ${
-                  errors.bankName
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-gray-300 dark:border-gray-600'
-                } bg-white dark:bg-card-dark text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
-              >
-                <option value="">Выберите банк</option>
-                {BANKS.map((bank) => (
-                  <option key={bank} value={bank}>
-                    {bank}
-                  </option>
-                ))}
-              </select>
-              {errors.bankName && (
-                <p className="mt-2 text-sm text-red-500">{errors.bankName}</p>
-              )}
-            </div>
+            <Select
+              options={BANKS}
+              value={bankName}
+              onChange={setBankName}
+              label="Банк получателя"
+              placeholder="Выберите банк"
+              error={errors.bankName}
+              disabled={submitting}
+            />
             <Input
               type="tel"
               value={phoneNumber}
@@ -267,16 +240,26 @@ export function WithdrawalModal({
               placeholder="+7 (999) 999-99-99"
               mask="phone"
               error={errors.phoneNumber}
+              disabled={submitting}
             />
           </>
         )}
 
         {/* Summary */}
         {amount && !errors.amount && (
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
-            <p className="text-center text-lg font-semibold text-gray-900 dark:text-gray-100">
-              К зачислению: {formatCurrency(Number(amount))}
-            </p>
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-2xl p-5 border border-primary/20 shadow-sm">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-2xl">✨</span>
+              <div className="text-center">
+                <p className="text-xs text-text-muted dark:text-text-muted-dark mb-1 font-medium">
+                  К зачислению
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+                  {formatCurrency(Number(amount))}
+                </p>
+              </div>
+              <span className="text-2xl">💎</span>
+            </div>
           </div>
         )}
 

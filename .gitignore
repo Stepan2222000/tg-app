@@ -71,3 +71,6 @@ backend/uploads/
 
 # Docker
 .docker/
+
+# Cloudflare Tunnel (credentials contain secrets!)
+tunnel/credentials.json

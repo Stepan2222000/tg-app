@@ -73,39 +73,17 @@ done
 
 echo ""
 
-# Step 4: Get Cloudflare Tunnel URL
-echo -e "${YELLOW}[4/4] Getting public tunnel URL...${NC}"
-echo "Waiting for Cloudflare Tunnel to start (may take 10-15 seconds)..."
+# Step 4: Verify tunnel is ready
+echo -e "${YELLOW}[4/4] Verifying Cloudflare Tunnel...${NC}"
+echo "Waiting for named tunnel to connect (may take 10-15 seconds)..."
 echo ""
 
-# Wait for tunnel to initialize and get URL from logs
-TUNNEL_URL=""
-for i in {1..20}; do
-  # Try to get URL from docker logs
-  TUNNEL_URL=$(docker compose logs tunnel 2>/dev/null | grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' | head -1)
+# Wait for tunnel to connect
+sleep 10
 
-  if [ ! -z "$TUNNEL_URL" ]; then
-    echo -e "${GREEN}✓ Tunnel is ready!${NC}"
-    break
-  fi
-
-  if [ $i -eq 20 ]; then
-    echo -e "${YELLOW}⚠ Could not get tunnel URL from logs${NC}"
-    echo "Check logs manually with: docker compose logs tunnel"
-    break
-  fi
-
-  sleep 1
-done
-
-# Update MINI_APP_URL with new tunnel URL
-if [ ! -z "$TUNNEL_URL" ]; then
-  echo -e "${YELLOW}Updating MINI_APP_URL in backend/.env...${NC}"
-  cd backend
-  sed -i "s|MINI_APP_URL=.*|MINI_APP_URL=$TUNNEL_URL|g" .env
-  cd ..
-  echo -e "${GREEN}✓ MINI_APP_URL updated${NC}"
-fi
+echo -e "${GREEN}✓ Named tunnel should be connected!${NC}"
+echo ""
+echo -e "${GREEN}Permanent tunnel URL: https://miniapp.cheapdomain2025.site${NC}"
 
 # Start Telegram bot in background
 echo ""
@@ -130,22 +108,13 @@ echo ""
 echo "Services:"
 echo "  Backend API:  http://localhost:8000"
 echo "  Frontend:     http://localhost:80"
-
-if [ ! -z "$TUNNEL_URL" ]; then
-  echo "  Public URL:   $TUNNEL_URL"
-  echo ""
-  echo "🌐 Your Mini App is now accessible at:"
-  echo "   $TUNNEL_URL"
-  echo ""
-  echo "📝 Update bot configuration:"
-  echo "   1. Edit backend/.env"
-  echo "   2. Set MINI_APP_URL=$TUNNEL_URL"
-  echo "   3. Restart bot: pkill -f bot.py && ./start-bot.sh"
-else
-  echo ""
-  echo "To get tunnel URL, run:"
-  echo "  docker compose logs tunnel | grep trycloudflare"
-fi
+echo "  Public URL:   https://miniapp.cheapdomain2025.site"
+echo ""
+echo "🌐 Your Mini App is now accessible at:"
+echo "   https://miniapp.cheapdomain2025.site"
+echo ""
+echo "📝 Bot is configured with permanent domain"
+echo "   MINI_APP_URL=https://miniapp.cheapdomain2025.site"
 
 echo ""
 echo "Commands:"

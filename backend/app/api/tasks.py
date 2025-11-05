@@ -97,7 +97,7 @@ async def get_active_tasks(
     assignments = await db.fetch_all(
         """
         SELECT
-            ta.id as assignment_id,
+            ta.id,
             ta.task_id,
             ta.status,
             ta.deadline,
@@ -177,7 +177,7 @@ async def get_task_details(
     assignment = await db.fetch_one(
         """
         SELECT
-            ta.id as assignment_id,
+            ta.id,
             ta.task_id,
             ta.user_id,
             ta.status,
@@ -270,15 +270,28 @@ async def assign_task(
     try:
         async with db.transaction() as conn:
             # Check active tasks limit within transaction
-            # NEW-CRITICAL FIX: Use FOR UPDATE to lock task_assignments rows
+            # FIXED: Split into two queries to avoid "FOR UPDATE with aggregate functions" error
+            # First lock the rows, then count them
             # This prevents race condition where multiple concurrent requests
             # could all pass the limit check before any assignment is created
+
+            # Step 1: Lock all user's active assignment rows
+            await conn.execute(
+                """
+                SELECT 1
+                FROM task_assignments
+                WHERE user_id = $1 AND status = 'assigned'
+                FOR UPDATE
+                """,
+                telegram_id
+            )
+
+            # Step 2: Now safely count them
             active_count = await conn.fetchval(
                 """
                 SELECT COUNT(*)
                 FROM task_assignments
                 WHERE user_id = $1 AND status = 'assigned'
-                FOR UPDATE
                 """,
                 telegram_id
             )

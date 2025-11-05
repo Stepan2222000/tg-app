@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 
 interface ButtonProps {
   variant?: 'primary' | 'secondary';
@@ -6,7 +6,7 @@ interface ButtonProps {
   loading?: boolean;
   fullWidth?: boolean;
   onClick?: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
   type?: 'button' | 'submit' | 'reset';
 }
 
@@ -20,13 +20,13 @@ export function Button({
   type = 'button',
 }: ButtonProps) {
   const baseStyles =
-    'px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2';
+    'px-6 py-3.5 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]';
 
   const variantStyles = {
     primary:
-      'bg-primary text-white hover:bg-[#c59563] active:bg-[#b68552] disabled:bg-text-muted disabled:cursor-not-allowed',
+      'bg-gradient-to-r from-primary to-[#c59563] text-white hover:from-[#c59563] hover:to-primary disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md',
     secondary:
-      'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed',
+      'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed disabled:transform-none',
   };
 
   const widthStyles = fullWidth ? 'w-full' : '';

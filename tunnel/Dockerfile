@@ -1,5 +1,10 @@
 # Cloudflare Tunnel Dockerfile
+# Named tunnel configuration for permanent domain
 FROM cloudflare/cloudflared:latest
 
-# Run tunnel
-CMD ["tunnel", "--no-autoupdate", "--url", "http://avito_tasker_frontend:80"]
+# Copy tunnel configuration files
+COPY config.yml /etc/cloudflared/config.yml
+COPY credentials.json /etc/cloudflared/credentials.json
+
+# Run named tunnel with config file
+CMD ["tunnel", "--config", "/etc/cloudflared/config.yml", "run"]

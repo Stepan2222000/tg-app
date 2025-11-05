@@ -67,7 +67,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Cloudflare Tunnel (no warning page, HTTP2 protocol)
+  # Cloudflare Tunnel (named tunnel with permanent domain)
   tunnel:
     build:
       context: ./tunnel
@@ -78,9 +78,6 @@ services:
       - frontend
     networks:
       - avito_tasker_network
-    environment:
-      - TUNNEL_TRANSPORT_PROTOCOL=http2
-    command: tunnel --no-autoupdate --protocol http2 --url http://avito_tasker_frontend:80
 
 networks:
   avito_tasker_network:
