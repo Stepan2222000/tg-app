@@ -15,6 +15,7 @@ export function ReferralsPage() {
 
   const [stats, setStats] = useState<ReferralStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   // Get bot username from env
@@ -45,6 +46,7 @@ export function ReferralsPage() {
       } catch (error) {
         logger.error('Failed to load referral stats:', error);
         if (isMounted) {
+          setHasError(true);
           showError(
             error instanceof Error
               ? error.message
@@ -107,8 +109,62 @@ export function ReferralsPage() {
     );
   }
 
-  if (!stats) {
-    return null;
+  // Error screen
+  if (hasError || !stats) {
+    return (
+      <div className="min-h-screen bg-background-light dark:bg-background-dark font-display">
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-background-light/80 dark:bg-background-dark/80 p-4 backdrop-blur-sm">
+          <div className="flex size-12 shrink-0 items-center justify-start">
+            <button
+              onClick={handleBack}
+              aria-label="Вернуться на главную страницу"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                arrow_back
+              </span>
+            </button>
+          </div>
+          <h1 className="flex-1 text-center text-lg font-bold leading-tight tracking-[-0.015em] text-text-primary-light dark:text-text-primary-dark">
+            Реферальная программа
+          </h1>
+          <div className="flex w-12 items-center justify-end"></div>
+        </div>
+
+        {/* Error content */}
+        <main className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+          <div
+            className="flex flex-col items-center justify-center max-w-md text-center"
+            role="alert"
+          >
+            <span className="material-symbols-outlined text-6xl text-red-500 mb-4" aria-hidden="true">
+              error
+            </span>
+            <h2 className="text-xl font-bold text-text-primary-light dark:text-text-primary-dark mb-2">
+              Не удалось загрузить данные
+            </h2>
+            <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-6">
+              Произошла ошибка при загрузке статистики рефералов. Проверьте подключение к интернету и попробуйте снова.
+            </p>
+            <button
+              onClick={() => {
+                setHasError(false);
+                setIsLoading(true);
+                window.location.reload();
+              }}
+              aria-label="Попробовать снова"
+              className="flex min-w-[160px] cursor-pointer items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base" aria-hidden="true">
+                refresh
+              </span>
+              <span>Попробовать снова</span>
+            </button>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   const hasReferrals = stats.referrals.length > 0;

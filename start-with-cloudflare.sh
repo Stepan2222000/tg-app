@@ -98,6 +98,30 @@ for i in {1..20}; do
   sleep 1
 done
 
+# Update MINI_APP_URL with new tunnel URL
+if [ ! -z "$TUNNEL_URL" ]; then
+  echo -e "${YELLOW}Updating MINI_APP_URL in backend/.env...${NC}"
+  cd backend
+  sed -i "s|MINI_APP_URL=.*|MINI_APP_URL=$TUNNEL_URL|g" .env
+  cd ..
+  echo -e "${GREEN}✓ MINI_APP_URL updated${NC}"
+fi
+
+# Start Telegram bot in background
+echo ""
+echo -e "${YELLOW}Starting Telegram bot...${NC}"
+nohup bash -c "cd /root/tg-app/tg-app && ./start-bot.sh" > /tmp/bot.log 2>&1 &
+BOT_PID=$!
+sleep 3
+
+# Check if bot started successfully
+if ps -p $BOT_PID > /dev/null 2>&1; then
+  echo -e "${GREEN}✓ Telegram bot started (PID: $BOT_PID)${NC}"
+  echo -e "${GREEN}  Bot logs: tail -f /tmp/bot.log${NC}"
+else
+  echo -e "${YELLOW}⚠ Bot may have issues. Check: tail -f /tmp/bot.log${NC}"
+fi
+
 echo ""
 echo "=========================================="
 echo "  ✅ Production Started Successfully!"
@@ -126,6 +150,7 @@ fi
 echo ""
 echo "Commands:"
 echo "  View logs:    docker compose logs -f"
+echo "  Bot logs:     tail -f /tmp/bot.log"
 echo "  Stop:         ./stop-production.sh"
 echo "  Restart:      ./start-with-cloudflare.sh"
 echo ""
