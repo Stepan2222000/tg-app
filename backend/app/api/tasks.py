@@ -173,26 +173,9 @@ async def get_task_details(
     """
     telegram_id = user["telegram_id"]
 
-    # Get assignment with task details
+    # Get assignment record
     assignment = await db.fetch_one(
-        """
-        SELECT
-            ta.id,
-            ta.task_id,
-            ta.user_id,
-            ta.status,
-            ta.deadline,
-            ta.phone_number,
-            ta.assigned_at,
-            ta.submitted_at,
-            t.type,
-            t.avito_url,
-            t.message_text,
-            t.price
-        FROM task_assignments ta
-        JOIN tasks t ON t.id = ta.task_id
-        WHERE ta.id = $1
-        """,
+        "SELECT * FROM task_assignments WHERE id = $1",
         assignment_id
     )
 
@@ -216,6 +199,23 @@ async def get_task_details(
         assignment_id
     )
 
+    # Fetch full task payload to match assignment response format
+    task_full = await db.fetch_one(
+        "SELECT * FROM tasks WHERE id = $1",
+        assignment['task_id']
+    )
+
+    if not task_full:
+        logger.error(
+            "Task %s referenced by assignment %s not found",
+            assignment['task_id'],
+            assignment_id
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Task data is unavailable"
+        )
+
     # Build response
     result = dict(assignment)
     result['screenshots'] = []
@@ -228,10 +228,21 @@ async def get_task_details(
     # Serialize datetime fields
     if result.get('deadline'):
         result['deadline'] = result['deadline'].isoformat()
+    if result.get('created_at'):
+        result['created_at'] = result['created_at'].isoformat()
     if result.get('assigned_at'):
         result['assigned_at'] = result['assigned_at'].isoformat()
     if result.get('submitted_at'):
         result['submitted_at'] = result['submitted_at'].isoformat()
+
+    # Attach full task data with serialized datetimes
+    task_dict = dict(task_full)
+    if task_dict.get('created_at'):
+        task_dict['created_at'] = task_dict['created_at'].isoformat()
+    if task_dict.get('updated_at'):
+        task_dict['updated_at'] = task_dict['updated_at'].isoformat()
+
+    result['task'] = task_dict
 
     logger.debug(f"Returned details for assignment {assignment_id} to user {telegram_id}")
     return result
