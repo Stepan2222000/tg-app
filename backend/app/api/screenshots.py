@@ -16,6 +16,11 @@ from app.dependencies.auth import get_current_user
 from app.db.database import db
 from app.utils.config import config
 from app.utils.datetime import to_iso8601
+from app.utils.filesystem import (
+    build_static_url,
+    cleanup_empty_dirs,
+    ensure_subdirectory,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -128,7 +133,8 @@ async def upload_screenshot(
 
     # SECURITY: Construct and validate file path to prevent path traversal
     upload_dir = Path(config.UPLOAD_DIR).resolve()  # Resolve to absolute path
-    file_path = (upload_dir / unique_filename).resolve()
+    assignment_dir = ensure_subdirectory(upload_dir, telegram_id, assignment_id)
+    file_path = (assignment_dir / unique_filename).resolve()
 
     # Ensure file path is within upload directory (prevent path traversal attacks)
     if not str(file_path).startswith(str(upload_dir)):
@@ -163,7 +169,7 @@ async def upload_screenshot(
 
         # Build response
         result = dict(screenshot)
-        result['url'] = f"/static/screenshots/{unique_filename}"
+        result['url'] = build_static_url(file_path, upload_dir)
 
         # Serialize datetime
         if result.get('uploaded_at'):
@@ -178,6 +184,11 @@ async def upload_screenshot(
         try:
             await aiofiles.os.remove(str(file_path))
             logger.debug(f"Cleaned up file after DB error: {file_path}")
+            try:
+                file_path.relative_to(upload_dir)
+                cleanup_empty_dirs(file_path.parent, upload_dir)
+            except ValueError:
+                pass
         except Exception as cleanup_error:
             logger.warning(f"Failed to cleanup file after DB error: {cleanup_error}")
 
@@ -262,6 +273,13 @@ async def delete_screenshot(
         if file_path.exists():
             await aiofiles.os.remove(str(file_path))
             logger.debug(f"Deleted screenshot file: {file_path}")
+            base_dir = Path(config.UPLOAD_DIR).resolve()
+            try:
+                file_path.relative_to(base_dir)
+                cleanup_empty_dirs(file_path.parent, base_dir)
+            except ValueError:
+                # Legacy path outside the structured uploads directory
+                pass
         else:
             logger.warning(f"Screenshot file not found on disk: {file_path}")
     except Exception as file_error:

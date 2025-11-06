@@ -17,6 +17,7 @@ import aiofiles.os
 
 from app.db.database import db
 from app.api import auth, config, tasks, screenshots, withdrawals, referrals
+from app.utils.filesystem import cleanup_empty_dirs
 
 # Load environment variables
 load_dotenv()
@@ -108,6 +109,7 @@ async def auto_return_expired_tasks_middleware(request: Request, call_next):
     """
     # Only run cleanup on task-related endpoints
     if request.url.path.startswith("/api/tasks"):
+        base_upload_dir = Path(os.getenv('UPLOAD_DIR', './uploads/screenshots')).resolve()
         try:
             # Use transaction with FOR UPDATE SKIP LOCKED to prevent race conditions
             # Multiple concurrent requests will process different assignments
@@ -197,6 +199,14 @@ async def auto_return_expired_tasks_middleware(request: Request, call_next):
                     if file_path.exists():
                         await aiofiles.os.remove(str(file_path))
                         logger.debug(f"Deleted expired screenshot file: {file_path}")
+                        try:
+                            file_path.relative_to(base_upload_dir)
+                            cleanup_empty_dirs(file_path.parent, base_upload_dir)
+                        except ValueError:
+                            # File outside structured directory (legacy) – skip cleanup
+                            pass
+                    else:
+                        logger.warning(f"Screenshot file not found during cleanup: {file_path}")
                 except Exception as file_error:
                     logger.warning(f"Failed to delete screenshot file {file_path_str}: {file_error}")
 
@@ -210,7 +220,7 @@ async def auto_return_expired_tasks_middleware(request: Request, call_next):
 
 
 # Create uploads directory if not exists
-upload_dir = Path(os.getenv('UPLOAD_DIR', './uploads/screenshots'))
+upload_dir = Path(os.getenv('UPLOAD_DIR', './uploads/screenshots')).resolve()
 upload_dir.mkdir(parents=True, exist_ok=True)
 
 # Mount static files for screenshots (after uploads directory is created)

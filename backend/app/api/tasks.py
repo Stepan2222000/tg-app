@@ -4,6 +4,7 @@ Task management endpoints.
 Handles task lifecycle: available tasks, assignment, submission, and cancellation.
 """
 
+import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -15,6 +16,7 @@ from app.dependencies.auth import get_current_user
 from app.db.database import db
 from app.utils.config import config
 from app.utils.datetime import to_iso8601
+from app.utils.filesystem import build_static_url, cleanup_empty_dirs
 from app.utils.validation import validate_phone_number
 
 router = APIRouter()
@@ -111,8 +113,14 @@ async def get_active_tasks(
             t.message_text,
             t.price,
             COALESCE(
-                json_agg(s.file_path ORDER BY s.uploaded_at ASC)
-                FILTER (WHERE s.file_path IS NOT NULL),
+                json_agg(
+                    json_build_object(
+                        'id', s.id,
+                        'file_path', s.file_path,
+                        'uploaded_at', s.uploaded_at
+                    )
+                    ORDER BY s.uploaded_at ASC
+                ) FILTER (WHERE s.id IS NOT NULL),
                 '[]'
             ) as screenshots
         FROM task_assignments ta
@@ -126,17 +134,47 @@ async def get_active_tasks(
     )
 
     # Format response with deserialized screenshots array
+    upload_dir = Path(config.UPLOAD_DIR).resolve()
     result = []
     for assignment in assignments:
         assignment_dict = dict(assignment)
 
-        # Parse screenshots JSON (already comes as list from json_agg)
-        import json
-        screenshots_data = assignment_dict.get('screenshots', '[]')
+        screenshots_data = assignment_dict.get('screenshots', [])
         if isinstance(screenshots_data, str):
-            assignment_dict['screenshots'] = json.loads(screenshots_data) if screenshots_data != '[]' else []
-        else:
-            assignment_dict['screenshots'] = screenshots_data if screenshots_data else []
+            screenshots_data = json.loads(screenshots_data) if screenshots_data else []
+
+        normalized_screenshots = []
+        for raw_screenshot in screenshots_data or []:
+            if isinstance(raw_screenshot, dict):
+                file_path_str = raw_screenshot.get('file_path')
+                screenshot_id = raw_screenshot.get('id')
+                uploaded_at_value = raw_screenshot.get('uploaded_at')
+            else:
+                file_path_str = raw_screenshot
+                screenshot_id = None
+                uploaded_at_value = None
+
+            screenshot_payload: Dict[str, Any] = {
+                "id": screenshot_id,
+                "file_path": file_path_str
+            }
+
+            if uploaded_at_value:
+                if isinstance(uploaded_at_value, str):
+                    screenshot_payload["uploaded_at"] = uploaded_at_value
+                else:
+                    screenshot_payload["uploaded_at"] = to_iso8601(uploaded_at_value)
+            else:
+                screenshot_payload["uploaded_at"] = ""
+
+            if file_path_str:
+                screenshot_payload["url"] = build_static_url(Path(file_path_str), upload_dir)
+            else:
+                screenshot_payload["url"] = None
+
+            normalized_screenshots.append(screenshot_payload)
+
+        assignment_dict['screenshots'] = normalized_screenshots
 
         # Serialize datetime fields
         if assignment_dict.get('deadline'):
@@ -219,12 +257,16 @@ async def get_task_details(
         )
 
     # Build response
+    upload_dir = Path(config.UPLOAD_DIR).resolve()
     result = dict(assignment)
     result['screenshots'] = []
     for screenshot in screenshots:
         screenshot_dict = dict(screenshot)
         if screenshot_dict.get('uploaded_at'):
             screenshot_dict['uploaded_at'] = to_iso8601(screenshot_dict['uploaded_at'])
+        file_path_str = screenshot_dict.get('file_path')
+        if file_path_str:
+            screenshot_dict['url'] = build_static_url(Path(file_path_str), upload_dir)
         result['screenshots'].append(screenshot_dict)
 
     # Serialize datetime fields
@@ -584,12 +626,18 @@ async def cancel_task(
             )
 
         # Delete screenshot files from disk (after successful transaction)
+        base_dir = Path(config.UPLOAD_DIR).resolve()
         for screenshot in screenshots:
             try:
                 file_path = Path(screenshot['file_path'])
                 if file_path.exists():
                     await aiofiles.os.remove(str(file_path))
                     logger.debug(f"Deleted screenshot file: {file_path}")
+                    try:
+                        file_path.relative_to(base_dir)
+                        cleanup_empty_dirs(file_path.parent, base_dir)
+                    except ValueError:
+                        pass
             except Exception as file_error:
                 logger.warning(f"Failed to delete screenshot file {file_path}: {file_error}")
 

@@ -20,6 +20,34 @@ export function TaskScreenshotsUpload({
   const { showSuccess, showError } = useNotification();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+
+  const toAbsoluteUrl = (value?: string) => {
+    if (!value) return '';
+    return value.startsWith('http') ? value : `${apiUrl}${value}`;
+  };
+
+  const buildStaticUrlFromFile = (filePath?: string) => {
+    if (!filePath) return '';
+    const normalized = filePath.replace(/\\/g, '/');
+    const marker = '/uploads/screenshots/';
+    const markerIndex = normalized.indexOf(marker);
+
+    let relativePath = '';
+    if (markerIndex >= 0) {
+      relativePath = normalized.slice(markerIndex + marker.length);
+    } else {
+      const parts = normalized.split('/').filter(Boolean);
+      const screenshotsIndex = parts.lastIndexOf('screenshots');
+      if (screenshotsIndex !== -1 && screenshotsIndex + 1 < parts.length) {
+        relativePath = parts.slice(screenshotsIndex + 1).join('/');
+      } else {
+        relativePath = parts.pop() ?? '';
+      }
+    }
+
+    return relativePath ? `${apiUrl}/static/screenshots/${relativePath}` : '';
+  };
 
   const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -66,15 +94,14 @@ export function TaskScreenshotsUpload({
 
       results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-          // Backend returns { id, file_path, url, uploaded_at }
-          // url is relative path like "/static/screenshots/uuid.jpg"
-          const apiUrl = import.meta.env.VITE_API_URL || '';
           const screenshot = result.value;
+          const absoluteUrl = toAbsoluteUrl(screenshot.url);
+          const fallbackUrl = buildStaticUrlFromFile(screenshot.file_path);
 
           newScreenshots.push({
             id: screenshot.id,
             file_path: screenshot.file_path,
-            url: screenshot.url ? `${apiUrl}${screenshot.url}` : `${apiUrl}/static/screenshots/${screenshot.file_path.split('/').pop()}`,
+            url: absoluteUrl || fallbackUrl,
             uploaded_at: screenshot.uploaded_at,
           });
         } else {
@@ -134,8 +161,8 @@ export function TaskScreenshotsUpload({
       <div className="grid grid-cols-3 gap-3 mb-4">
         {/* Existing Screenshots */}
         {screenshots.map((screenshot) => {
-          const apiUrl = import.meta.env.VITE_API_URL || '';
-          const imgUrl = screenshot.url || `${apiUrl}/static/screenshots/${screenshot.file_path.split('/').pop()}`;
+          const imgUrl =
+            toAbsoluteUrl(screenshot.url) || buildStaticUrlFromFile(screenshot.file_path);
 
           return (
             <div key={screenshot.id} className="relative aspect-square">
