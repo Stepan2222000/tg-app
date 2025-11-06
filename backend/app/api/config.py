@@ -3,13 +3,15 @@
 Configuration endpoints.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any
 import logging
+from typing import Any, Dict
 
-from app.utils.config import config
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from app.dependencies.auth import get_current_user
 from app.db.database import db
+from app.utils.config import config
+from app.utils.datetime import to_iso8601
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -87,6 +89,6 @@ async def get_user_me(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[
     # Convert created_at to ISO 8601 string
     user_response = dict(user_data)
     if user_response.get("created_at"):
-        user_response["created_at"] = user_response["created_at"].isoformat()
+        user_response["created_at"] = to_iso8601(user_response["created_at"])
 
     return user_response

@@ -4,16 +4,18 @@ Screenshot upload and deletion endpoints.
 Handles multipart file uploads with validation and ownership checks.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
-from typing import Dict, Any
 import logging
-import uuid
 import aiofiles
+import uuid
 from pathlib import Path
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from app.dependencies.auth import get_current_user
 from app.db.database import db
 from app.utils.config import config
+from app.utils.datetime import to_iso8601
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -165,7 +167,7 @@ async def upload_screenshot(
 
         # Serialize datetime
         if result.get('uploaded_at'):
-            result['uploaded_at'] = result['uploaded_at'].isoformat()
+            result['uploaded_at'] = to_iso8601(result['uploaded_at'])
 
         logger.info(f"User {telegram_id} uploaded screenshot {screenshot['id']} for assignment {assignment_id}")
         return result

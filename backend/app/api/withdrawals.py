@@ -4,14 +4,16 @@ Withdrawal management endpoints.
 Handles withdrawal requests and history.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Body
-from typing import Dict, Any, List
 import logging
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 
 from app.dependencies.auth import get_current_user
 from app.db.database import db
-from app.utils.validation import validate_withdrawal_details
 from app.utils.config import config
+from app.utils.datetime import to_iso8601
+from app.utils.validation import validate_withdrawal_details
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -202,9 +204,9 @@ async def create_withdrawal(
         # Convert datetime to ISO 8601
         withdrawal_response = dict(withdrawal)
         if withdrawal_response.get("created_at"):
-            withdrawal_response["created_at"] = withdrawal_response["created_at"].isoformat()
+            withdrawal_response["created_at"] = to_iso8601(withdrawal_response["created_at"])
         if withdrawal_response.get("processed_at"):
-            withdrawal_response["processed_at"] = withdrawal_response["processed_at"].isoformat()
+            withdrawal_response["processed_at"] = to_iso8601(withdrawal_response["processed_at"])
 
         return withdrawal_response
 
@@ -273,9 +275,9 @@ async def get_withdrawal_history(
         for withdrawal in withdrawals:
             withdrawal_dict = dict(withdrawal)
             if withdrawal_dict.get("created_at"):
-                withdrawal_dict["created_at"] = withdrawal_dict["created_at"].isoformat()
+                withdrawal_dict["created_at"] = to_iso8601(withdrawal_dict["created_at"])
             if withdrawal_dict.get("processed_at"):
-                withdrawal_dict["processed_at"] = withdrawal_dict["processed_at"].isoformat()
+                withdrawal_dict["processed_at"] = to_iso8601(withdrawal_dict["processed_at"])
             result.append(withdrawal_dict)
 
         logger.info(f"Returning {len(result)} withdrawals for user {telegram_id}")

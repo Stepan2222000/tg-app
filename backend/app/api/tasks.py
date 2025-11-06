@@ -4,15 +4,17 @@ Task management endpoints.
 Handles task lifecycle: available tasks, assignment, submission, and cancellation.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
-from typing import Dict, Any, List, Optional
 import logging
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import aiofiles.os
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 
 from app.dependencies.auth import get_current_user
 from app.db.database import db
 from app.utils.config import config
+from app.utils.datetime import to_iso8601
 from app.utils.validation import validate_phone_number
 
 router = APIRouter()
@@ -66,9 +68,9 @@ async def get_available_task(
     # Serialize datetime fields
     task_response = dict(task)
     if task_response.get('created_at'):
-        task_response['created_at'] = task_response['created_at'].isoformat()
+        task_response['created_at'] = to_iso8601(task_response['created_at'])
     if task_response.get('updated_at'):
-        task_response['updated_at'] = task_response['updated_at'].isoformat()
+        task_response['updated_at'] = to_iso8601(task_response['updated_at'])
 
     logger.debug(f"Returned available task {task['id']} of type '{type}'")
     return task_response
@@ -138,11 +140,11 @@ async def get_active_tasks(
 
         # Serialize datetime fields
         if assignment_dict.get('deadline'):
-            assignment_dict['deadline'] = assignment_dict['deadline'].isoformat()
+            assignment_dict['deadline'] = to_iso8601(assignment_dict['deadline'])
         if assignment_dict.get('assigned_at'):
-            assignment_dict['assigned_at'] = assignment_dict['assigned_at'].isoformat()
+            assignment_dict['assigned_at'] = to_iso8601(assignment_dict['assigned_at'])
         if assignment_dict.get('submitted_at'):
-            assignment_dict['submitted_at'] = assignment_dict['submitted_at'].isoformat()
+            assignment_dict['submitted_at'] = to_iso8601(assignment_dict['submitted_at'])
 
         result.append(assignment_dict)
 
@@ -222,25 +224,25 @@ async def get_task_details(
     for screenshot in screenshots:
         screenshot_dict = dict(screenshot)
         if screenshot_dict.get('uploaded_at'):
-            screenshot_dict['uploaded_at'] = screenshot_dict['uploaded_at'].isoformat()
+            screenshot_dict['uploaded_at'] = to_iso8601(screenshot_dict['uploaded_at'])
         result['screenshots'].append(screenshot_dict)
 
     # Serialize datetime fields
     if result.get('deadline'):
-        result['deadline'] = result['deadline'].isoformat()
+        result['deadline'] = to_iso8601(result['deadline'])
     if result.get('created_at'):
-        result['created_at'] = result['created_at'].isoformat()
+        result['created_at'] = to_iso8601(result['created_at'])
     if result.get('assigned_at'):
-        result['assigned_at'] = result['assigned_at'].isoformat()
+        result['assigned_at'] = to_iso8601(result['assigned_at'])
     if result.get('submitted_at'):
-        result['submitted_at'] = result['submitted_at'].isoformat()
+        result['submitted_at'] = to_iso8601(result['submitted_at'])
 
     # Attach full task data with serialized datetimes
     task_dict = dict(task_full)
     if task_dict.get('created_at'):
-        task_dict['created_at'] = task_dict['created_at'].isoformat()
+        task_dict['created_at'] = to_iso8601(task_dict['created_at'])
     if task_dict.get('updated_at'):
-        task_dict['updated_at'] = task_dict['updated_at'].isoformat()
+        task_dict['updated_at'] = to_iso8601(task_dict['updated_at'])
 
     result['task'] = task_dict
 
@@ -359,13 +361,13 @@ async def assign_task(
 
         # Serialize datetime fields
         if result.get('deadline'):
-            result['deadline'] = result['deadline'].isoformat()
+            result['deadline'] = to_iso8601(result['deadline'])
         if result.get('assigned_at'):
-            result['assigned_at'] = result['assigned_at'].isoformat()
+            result['assigned_at'] = to_iso8601(result['assigned_at'])
         if result['task'].get('created_at'):
-            result['task']['created_at'] = result['task']['created_at'].isoformat()
+            result['task']['created_at'] = to_iso8601(result['task']['created_at'])
         if result['task'].get('updated_at'):
-            result['task']['updated_at'] = result['task']['updated_at'].isoformat()
+            result['task']['updated_at'] = to_iso8601(result['task']['updated_at'])
 
         logger.info(f"User {telegram_id} assigned task {task_id} (assignment {assignment['id']})")
         return result
@@ -486,11 +488,11 @@ async def submit_task(
     # Build response
     result = dict(updated_assignment)
     if result.get('deadline'):
-        result['deadline'] = result['deadline'].isoformat()
+        result['deadline'] = to_iso8601(result['deadline'])
     if result.get('assigned_at'):
-        result['assigned_at'] = result['assigned_at'].isoformat()
+        result['assigned_at'] = to_iso8601(result['assigned_at'])
     if result.get('submitted_at'):
-        result['submitted_at'] = result['submitted_at'].isoformat()
+        result['submitted_at'] = to_iso8601(result['submitted_at'])
 
     logger.info(f"User {telegram_id} submitted task assignment {assignment_id} (task {assignment['task_id']})")
     return result
