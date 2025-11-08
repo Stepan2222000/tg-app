@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import aiofiles.os
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status, Request
 
 from app.dependencies.auth import get_current_user
 from app.db.database import db
@@ -18,13 +18,16 @@ from app.utils.config import config
 from app.utils.datetime import to_iso8601
 from app.utils.filesystem import build_static_url, cleanup_empty_dirs
 from app.utils.validation import validate_phone_number
+from app.utils.rate_limit import limiter
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 @router.get("/available")
+@limiter.limit("30/minute")  # Max 30 requests per minute per IP
 async def get_available_task(
+    request: Request,
     type: str = Query(..., description="Task type: 'simple' or 'phone'"),
     user: Dict[str, Any] = Depends(get_current_user)
 ) -> Dict[str, Any]:
@@ -32,6 +35,8 @@ async def get_available_task(
     Get one random available task by type.
 
     PROTECTED endpoint - requires valid Telegram initData in Authorization header.
+
+    RATE LIMITED: 30 requests per minute per IP to prevent spam.
 
     Query parameters:
         type: Task type ('simple' or 'phone')

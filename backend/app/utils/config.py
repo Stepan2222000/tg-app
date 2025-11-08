@@ -149,6 +149,7 @@ class Config:
     # Telegram
     TELEGRAM_BOT_TOKEN: str = get_str_env('TELEGRAM_BOT_TOKEN')
     TELEGRAM_BOT_USERNAME: str = get_str_env('TELEGRAM_BOT_USERNAME')
+    TELEGRAM_APP_SHORT_NAME: str = get_str_env('TELEGRAM_APP_SHORT_NAME', 'avitotasker')
 
     # File Upload
     UPLOAD_DIR: str = get_str_env('UPLOAD_DIR', './uploads/screenshots')

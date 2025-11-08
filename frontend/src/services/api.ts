@@ -30,19 +30,35 @@ class ApiService {
     // Request interceptor to add Authorization header
     this.api.interceptors.request.use(
       (config) => {
+        console.log('[DIAG] API Request:', config.method?.toUpperCase(), config.url);
+
         const initData = telegramService.getInitData();
-        if (initData) {
+        console.log('[DIAG] initData length before auth header:', initData?.length || 0);
+
+        if (initData && initData.length > 0) {
           config.headers.Authorization = `tma ${initData}`;
+          console.log('[DIAG] Authorization header added (length:', initData.length, ')');
+        } else {
+          console.error('[DIAG] ERROR: initData is empty! No Authorization header added!');
         }
+
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => {
+        console.error('[DIAG] Request interceptor error:', error);
+        return Promise.reject(error);
+      }
     );
 
     // Response interceptor to handle errors
     this.api.interceptors.response.use(
-      (response) => response.data,
+      (response) => {
+        console.log('[DIAG] API Response SUCCESS:', response.config.method?.toUpperCase(), response.config.url, 'Status:', response.status);
+        return response.data;
+      },
       (error) => {
+        console.error('[DIAG] API Response ERROR:', error.config?.method?.toUpperCase(), error.config?.url, 'Status:', error.response?.status);
+        console.error('[DIAG] Error details:', error.response?.data);
         // NEW-CRITICAL-C FIX: Handle 401 (initData expired)
         if (error.response?.status === 401) {
           const message = error.response?.data?.detail || 'Сессия истекла';
@@ -80,7 +96,17 @@ class ApiService {
 
   // User
   async initUser(): Promise<User> {
-    return this.api.post<never, User>('/api/auth/init');
+    console.log('[DIAG] === initUser() called ===');
+    console.log('[DIAG] Timestamp:', new Date().toISOString());
+
+    try {
+      const result = await this.api.post<never, User>('/api/auth/init');
+      console.log('[DIAG] initUser() SUCCESS, user ID:', result.telegram_id);
+      return result;
+    } catch (error) {
+      console.error('[DIAG] initUser() FAILED:', error);
+      throw error;
+    }
   }
 
   async getUser(): Promise<User> {

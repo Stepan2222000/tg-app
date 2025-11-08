@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from typing import Dict, Any, List
 import logging
 
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import get_current_user, hash_user_id
 from app.db.database import db
 from app.utils.config import config
 
@@ -24,19 +24,20 @@ async def get_referral_link(user: Dict[str, Any] = Depends(get_current_user)) ->
     PROTECTED endpoint - requires valid Telegram initData in Authorization header.
 
     Returns:
-        {"link": "https://t.me/bot_username?start=ref_TELEGRAM_ID"}
+        {"link": "https://t.me/bot_username/app_short_name?startapp=ref_TELEGRAM_ID"}
 
     Example:
         GET /api/referrals/link
-        Response: {"link": "https://t.me/avito_tasker_bot?start=ref_123456789"}
+        Response: {"link": "https://t.me/avito_tasker_bot/avitotasker?startapp=ref_123456789"}
     """
     telegram_id = user['telegram_id']
     bot_username = config.TELEGRAM_BOT_USERNAME
+    app_short_name = config.TELEGRAM_APP_SHORT_NAME
 
-    # Format: https://t.me/{bot_username}?start=ref_{telegram_id}
-    referral_link = f"https://t.me/{bot_username}?start=ref_{telegram_id}"
+    # Format: https://t.me/{bot_username}/{app_short_name}?startapp=ref_{telegram_id}
+    referral_link = f"https://t.me/{bot_username}/{app_short_name}?startapp=ref_{telegram_id}"
 
-    logger.info(f"Generated referral link for user {telegram_id}")
+    logger.info(f"Generated referral link for user {hash_user_id(telegram_id)}")
 
     return {"link": referral_link}
 
@@ -82,7 +83,7 @@ async def get_referral_stats(user: Dict[str, Any] = Depends(get_current_user)) -
     )
     total_earnings = int(earnings_result['total']) if earnings_result else 0
 
-    logger.info(f"Fetched referral stats for user {telegram_id}: {total_referrals} referrals, {total_earnings}₽")
+    logger.info(f"Fetched referral stats for user {hash_user_id(telegram_id)}: {total_referrals} referrals, {total_earnings}₽")
 
     return {
         "total_referrals": total_referrals,
@@ -173,7 +174,7 @@ async def get_referral_list(user: Dict[str, Any] = Depends(get_current_user)) ->
         total_referrals += 1
         total_earnings += referral['earnings']
 
-    logger.info(f"Fetched referral list for user {telegram_id}: {total_referrals} referrals")
+    logger.info(f"Fetched referral list for user {hash_user_id(telegram_id)}: {total_referrals} referrals")
 
     return {
         "total_referrals": total_referrals,

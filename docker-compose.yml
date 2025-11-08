@@ -79,6 +79,38 @@ services:
     networks:
       - avito_tasker_network
 
+  # Telegram Bot service (referral system via /start command)
+  bot:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: avito_tasker_bot
+    restart: unless-stopped
+    command: ["python3", "bot.py"]  # Override CMD from Dockerfile
+    environment:
+      # Database configuration (same as backend)
+      - DATABASE_HOST=${DATABASE_HOST:-81.30.105.134}
+      - DATABASE_PORT=${DATABASE_PORT:-5416}
+      - DATABASE_NAME=${DATABASE_NAME:-avito_tasker}
+      - DATABASE_USER=${DATABASE_USER:-admin}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-Password123}
+
+      # Telegram configuration
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-avito_tasker_bot}
+      - TELEGRAM_APP_SHORT_NAME=${TELEGRAM_APP_SHORT_NAME:-avitotasker}
+
+      # General configuration
+      - ENVIRONMENT=production
+    networks:
+      - avito_tasker_network
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'python3 bot.py' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 networks:
   avito_tasker_network:
     driver: bridge

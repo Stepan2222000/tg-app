@@ -6,7 +6,7 @@
 2. Backend проверяет: пользователь существует?
    - **Нет** → создается новая запись с балансом 0₽
    - **Да** → загружаются данные существующего пользователя
-3. Если в URL был реферальный код `?start=ref_XXXXX` → записывается реферер
+3. Если пользователь открыл реферальную ссылку (`?startapp=ref_XXXXX`) → записывается реферер
 4. Загружается и отображается баланс (main_balance + referral_balance)
 
 ---
@@ -339,14 +339,16 @@
 - Уведомление: "Ссылка скопирована"
 
 ### Формирование ссылки
-- Формат: `https://t.me/avito_tasker_bot?start=ref_TELEGRAM_ID`
+- Формат (Direct Link Mini App): `https://t.me/avito_tasker_bot/avitotasker?startapp=ref_TELEGRAM_ID`
 - `TELEGRAM_ID` - это telegram_id реферера
+- Пример: `https://t.me/avito_tasker_bot/avitotasker?startapp=ref_123456789`
 
 ### Регистрация реферала
 **При переходе по ссылке нового пользователя:**
-1. Telegram открывает бота с `start=ref_XXXXXX`
-2. При первой авторизации сохраняется `referred_by = XXXXXX`
-3. В БД создается связь реферер → реферал
+1. Telegram открывает Mini App с параметром `startapp=ref_XXXXXX`
+2. Параметр передается в `initData.start_param` как `ref_XXXXXX`
+3. При первой авторизации сохраняется `referred_by = XXXXXX`
+4. В БД создается связь реферер → реферал
 
 ### Начисление бонусов
 **При одобрении задачи реферала:**

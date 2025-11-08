@@ -451,9 +451,10 @@ Middleware runs on every API request:
 ### Referral System
 
 1. User A generates referral link: `/api/referrals/link`
-2. Link format: `https://t.me/bot?start=ref_TELEGRAM_ID_A`
+2. Link format (Direct Link Mini App): `https://t.me/bot/app_short_name?startapp=ref_TELEGRAM_ID_A`
+   - Example: `https://t.me/avito_tasker_bot/avitotasker?startapp=ref_123456789`
 3. User B clicks link and opens Mini App
-4. Telegram passes `start_param=ref_TELEGRAM_ID_A`
+4. Telegram passes `start_param=ref_TELEGRAM_ID_A` in initData
 5. On first `/api/auth/init`, User B's `referred_by` set to User A's ID
 6. When User B completes a task and admin approves:
    - User B gets task payment

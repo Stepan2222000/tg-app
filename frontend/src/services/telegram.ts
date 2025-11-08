@@ -18,18 +18,47 @@ class TelegramService {
    * Initialize Telegram WebApp
    */
   init(): void {
+    console.log('[DIAG] TelegramService.init() starting...');
+
+    // Check if Telegram SDK is available
+    const tg = (window as any).Telegram;
+    if (!tg?.WebApp) {
+      console.error('[DIAG] ERROR: window.Telegram.WebApp not found!');
+      console.log('[DIAG] window.Telegram:', tg);
+      throw new Error('Telegram WebApp SDK not available');
+    }
+
+    console.log('[DIAG] SDK found. Platform:', this.webApp.platform);
+    console.log('[DIAG] SDK version:', this.webApp.version);
+    console.log('[DIAG] initData length:', this.webApp.initData?.length || 0);
+    console.log('[DIAG] initDataUnsafe.user:', this.webApp.initDataUnsafe.user ? 'present' : 'missing');
+    console.log('[DIAG] initDataUnsafe.start_param:', this.webApp.initDataUnsafe.start_param || 'none');
+
+    console.log('[DIAG] Calling webApp.ready()...');
     this.webApp.ready();
+
+    console.log('[DIAG] Calling webApp.expand()...');
     this.webApp.expand();
 
     // Apply theme
+    console.log('[DIAG] Applying theme...');
     this.applyTheme();
+
+    console.log('[DIAG] TelegramService.init() completed successfully');
   }
 
   /**
    * Get initData string for backend authentication
    */
   getInitData(): string {
-    return this.webApp.initData;
+    const initData = this.webApp.initData;
+    console.log('[DIAG] getInitData() called, length:', initData?.length || 0);
+
+    if (!initData || initData.length === 0) {
+      console.warn('[DIAG] WARNING: initData is empty or missing!');
+    }
+
+    return initData;
   }
 
   /**
@@ -38,9 +67,14 @@ class TelegramService {
   getUserData(): TelegramUser | null {
     const user = this.webApp.initDataUnsafe.user;
 
+    console.log('[DIAG] getUserData() called');
+
     if (!user) {
+      console.error('[DIAG] ERROR: initDataUnsafe.user is missing!');
       return null;
     }
+
+    console.log('[DIAG] User found - ID:', user.id, 'Username:', user.username || 'none', 'Name:', user.first_name);
 
     return {
       telegram_id: user.id,

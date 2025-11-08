@@ -89,7 +89,7 @@
 50. GET /api/withdrawals/history: история выводов с парсингом JSON details
 
 ### Блок 17: API - Реферальная программа
-51. GET /api/referrals/link: генерация ссылки https://t.me/bot?start=ref_TELEGRAM_ID
+51. GET /api/referrals/link: генерация ссылки (Direct Link Mini App format) https://t.me/bot/app_short_name?startapp=ref_TELEGRAM_ID
 52. GET /api/referrals/stats: количество рефералов и общий заработок
 53. GET /api/referrals/list: список рефералов с детализацией задач и заработка, сортировка по убыванию
 

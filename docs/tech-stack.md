@@ -52,7 +52,8 @@
 - Автоматическая регистрация при первом входе
 
 ### 3. Реферальная система
-- Параметр `start=ref_TELEGRAM_ID` в URL бота
+- Формат ссылки (Direct Link Mini App): `https://t.me/bot/app_short_name?startapp=ref_TELEGRAM_ID`
+- Параметр `startapp=ref_TELEGRAM_ID` передается в `initData.start_param`
 - При первой авторизации сохраняется связь реферер-реферал
 - Начисления происходят автоматически при одобрении задачи реферала
 

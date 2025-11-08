@@ -22,6 +22,7 @@ export function ReferralsPage() {
 
   // Get bot username from env
   const botUsername = import.meta.env.VITE_BOT_USERNAME || 'avito_tasker_bot';
+  const appShortName = import.meta.env.VITE_APP_SHORT_NAME || 'avitotasker';
   const useMockData = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
   // Load referral stats and link
@@ -32,9 +33,13 @@ export function ReferralsPage() {
       try {
         if (useMockData) {
           // Use mock data from file
+          // Get real telegram_id from Telegram WebApp for unique link
+          const userData = telegramService.getUserData();
+          const telegramId = userData?.telegram_id || '123456789'; // Fallback to default if not available
+
           if (isMounted) {
             setStats(mockReferralStats);
-            setReferralLink(`https://t.me/${botUsername}?start=ref_123456789`);
+            setReferralLink(`https://t.me/${botUsername}/${appShortName}?startapp=ref_${telegramId}`);
             setIsLoading(false);
           }
           return;

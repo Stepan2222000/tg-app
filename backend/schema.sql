@@ -138,7 +138,9 @@ CREATE TABLE IF NOT EXISTS referral_earnings (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (referrer_id) REFERENCES users(telegram_id) ON DELETE CASCADE,
     FOREIGN KEY (referral_id) REFERENCES users(telegram_id) ON DELETE CASCADE,
-    FOREIGN KEY (task_assignment_id) REFERENCES task_assignments(id) ON DELETE SET NULL
+    FOREIGN KEY (task_assignment_id) REFERENCES task_assignments(id) ON DELETE SET NULL,
+    -- Prevent double commission payments for same task
+    CONSTRAINT unique_task_commission UNIQUE (task_assignment_id) WHERE (task_assignment_id IS NOT NULL)
 );
 
 CREATE INDEX IF NOT EXISTS idx_referral_earnings_referrer_id ON referral_earnings(referrer_id);

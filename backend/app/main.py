@@ -8,6 +8,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 import os
 import logging
 import json
@@ -16,8 +18,9 @@ from dotenv import load_dotenv
 import aiofiles.os
 
 from app.db.database import db
-from app.api import auth, config, tasks, screenshots, withdrawals, referrals
+from app.api import auth, config, tasks, screenshots, withdrawals, referrals, users
 from app.utils.filesystem import cleanup_empty_dirs
+from app.utils.rate_limit import limiter
 
 # Load environment variables
 load_dotenv()
@@ -57,6 +60,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Rate limiting configuration
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware - environment-based configuration
 # CRITICAL-5 FIX: NEVER use wildcard, even in dev (CSRF vulnerability)
@@ -229,6 +236,7 @@ if upload_dir.exists():
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(users.router, prefix="/api/user", tags=["users"])
 app.include_router(config.router, prefix="/api", tags=["config"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(screenshots.router, prefix="/api/screenshots", tags=["screenshots"])

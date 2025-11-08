@@ -4,66 +4,41 @@ Authentication endpoints.
 """
 
 import logging
-import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import get_current_user, hash_user_id
 from app.db.database import db
 from app.utils.datetime import to_iso8601
+from app.utils.rate_limit import limiter
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def parse_referral_code(start_param: Optional[str]) -> Optional[int]:
-    """
-    Parse referral code from start_param.
-
-    Expected format: "ref_TELEGRAM_ID" (e.g., "ref_12345678")
-
-    Args:
-        start_param: Start parameter from Telegram initData
-
-    Returns:
-        Referrer telegram_id as integer, or None if invalid/missing
-
-    Example:
-        parse_referral_code("ref_12345678") -> 12345678
-        parse_referral_code("invalid") -> None
-        parse_referral_code(None) -> None
-    """
-    if not start_param:
-        return None
-
-    # Match pattern: ref_DIGITS
-    match = re.match(r'^ref_(\d+)$', start_param)
-    if not match:
-        logger.warning(f"Invalid referral code format: {start_param}")
-        return None
-
-    try:
-        referrer_id = int(match.group(1))
-        return referrer_id
-    except ValueError:
-        logger.warning(f"Failed to parse referrer_id from: {start_param}")
-        return None
-
-
 @router.post("/init")
-async def init_user(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+@limiter.limit("10/minute")  # Max 10 requests per minute per IP
+async def init_user(
+    request: Request,
+    user: Dict[str, Any] = Depends(get_current_user)
+) -> Dict[str, Any]:
     """
-    Initialize user (check/create user, handle referral code).
+    Initialize user (check/create user, update username/first_name if changed).
 
     PROTECTED endpoint - requires valid Telegram initData in Authorization header.
 
+    RATE LIMITED: 10 requests per minute per IP to prevent abuse.
+
     This endpoint handles:
-    1. First-time user registration (with optional referral code)
+    1. First-time user registration
     2. Returning user login (with smart update of username/first_name if changed)
 
+    NOTE: Referral logic is handled by Telegram bot (/start command).
+          The bot sets referred_by BEFORE Mini App opens.
+
     Args:
-        user: Current user from get_current_user dependency (telegram_id, username, first_name, start_param)
+        user: Current user from get_current_user dependency (telegram_id, username, first_name)
 
     Returns:
         User object:
@@ -79,48 +54,37 @@ async def init_user(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[st
 
     Logic:
     - If user does NOT exist in DB:
-      - Parse referral code from start_param (format: ref_TELEGRAM_ID)
-      - INSERT new user with referred_by
+      - INSERT new user (referred_by will be NULL unless set by bot)
     - If user EXISTS in DB:
-      - Compare username/first_name with DB values
-      - UPDATE only if changed (smart update)
-      - Note: referred_by is IMMUTABLE (only set on first registration)
+      - UPDATE username/first_name if changed
+      - referred_by is NOT updated (immutable, set only by bot)
     """
     telegram_id = user["telegram_id"]
     username = user.get("username")
     first_name = user.get("first_name", "")
-    start_param = user.get("start_param")
 
-    logger.info(f"init_user called for telegram_id={telegram_id}, start_param={start_param}")
+    logger.info(f"[DIAG] ======================================")
+    logger.info(f"[DIAG] /api/auth/init endpoint called")
+    logger.info(f"[DIAG] telegram_id (hashed): {hash_user_id(telegram_id)}")
+    logger.info(f"[DIAG] username: {username if username else 'none'}")
+    logger.info(f"[DIAG] first_name length: {len(first_name) if first_name else 0}")
 
-    # Parse referral code (format: ref_TELEGRAM_ID)
-    referred_by = parse_referral_code(start_param)
-
-    # Validate referral code
-    if referred_by:
-        # Check for self-referral
-        if referred_by == telegram_id:
-            logger.warning(f"User {telegram_id} attempted self-referral, ignoring")
-            referred_by = None
-        else:
-            # Verify referrer exists
-            referrer = await db.fetch_one(
-                "SELECT telegram_id FROM users WHERE telegram_id = $1",
-                referred_by
-            )
-            if not referrer:
-                logger.warning(f"Referrer {referred_by} not found, ignoring referral")
-                referred_by = None
-            else:
-                logger.info(f"User {telegram_id} referred by {referred_by}")
+    # Log with hashed ID (GDPR compliant)
+    logger.info(f"init_user called for telegram_id={hash_user_id(telegram_id)}")
 
     # Use UPSERT to handle both new user registration and existing user update atomically
     # This prevents race condition when multiple requests arrive simultaneously
+    # NOTE: referred_by is NOT touched here (set only by Telegram bot)
+    logger.info(f"[DIAG] Executing UPSERT query...")
+
+    import time
+    upsert_start = time.time()
+
     try:
         user_data = await db.fetch_one(
             """
-            INSERT INTO users (telegram_id, username, first_name, referred_by)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO users (telegram_id, username, first_name)
+            VALUES ($1, $2, $3)
             ON CONFLICT (telegram_id) DO UPDATE
             SET username = EXCLUDED.username,
                 first_name = EXCLUDED.first_name
@@ -128,23 +92,37 @@ async def init_user(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[st
             """,
             telegram_id,
             username,
-            first_name,
-            referred_by
+            first_name
         )
+
+        upsert_time = (time.time() - upsert_start) * 1000  # Convert to ms
+        logger.info(f"[DIAG] UPSERT completed in {upsert_time:.2f}ms")
 
         # Log whether this was insert or update
         if user_data:
-            # Check if this was a new user (referred_by was just set) or existing user
+            logger.info(f"[DIAG] UPSERT returned user data successfully")
+
+            # Check if this was a new user or existing user
             existing_check = await db.fetch_val(
                 "SELECT COUNT(*) FROM users WHERE telegram_id = $1 AND created_at < NOW() - INTERVAL '1 second'",
                 telegram_id
             )
             if existing_check > 0:
-                logger.info(f"Existing user login: telegram_id={telegram_id}")
+                logger.info(f"[DIAG] Path: EXISTING USER (UPDATE)")
+                logger.info(f"Existing user login: telegram_id={hash_user_id(telegram_id)}")
             else:
-                logger.info(f"New user registered: telegram_id={telegram_id}, referred_by={referred_by}")
+                logger.info(f"[DIAG] Path: NEW USER (INSERT)")
+                logger.info(f"New user registered: telegram_id={hash_user_id(telegram_id)}")
+
+        logger.info(f"[DIAG] Returning user data to client...")
+        logger.info(f"[DIAG] ======================================")
     except Exception as e:
-        logger.error(f"Failed to upsert user {telegram_id}: {e}")
+        logger.error(f"[DIAG] ======================================")
+        logger.error(f"[DIAG] EXCEPTION OCCURRED in UPSERT")
+        logger.error(f"[DIAG] Exception type: {type(e).__name__}")
+        logger.error(f"[DIAG] Exception message: {str(e)}")
+        logger.error(f"[DIAG] ======================================")
+        logger.error(f"Failed to upsert user {hash_user_id(telegram_id)}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to initialize user"
