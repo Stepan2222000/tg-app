@@ -15,20 +15,44 @@ class TelegramService {
   }
 
   /**
-   * Initialize Telegram WebApp
+   * Wait for Telegram SDK to be loaded (with retry logic for mobile)
    */
-  init(): void {
+  private async waitForSDK(maxRetries: number = 20, delayMs: number = 200): Promise<void> {
+    console.log('[DIAG] waitForSDK() starting - checking for Telegram SDK...');
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const tg = (window as any).Telegram;
+
+      if (tg?.WebApp) {
+        console.log(`[DIAG] SDK found on attempt ${attempt}/${maxRetries}`);
+        return;
+      }
+
+      console.log(`[DIAG] SDK not found (attempt ${attempt}/${maxRetries}), waiting ${delayMs}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+
+    throw new Error(`Telegram WebApp SDK not loaded after ${maxRetries * delayMs}ms`);
+  }
+
+  /**
+   * Initialize Telegram WebApp (async with SDK loading wait)
+   */
+  async init(): Promise<void> {
     console.log('[DIAG] TelegramService.init() starting...');
 
-    // Check if Telegram SDK is available
+    // Wait for SDK to be loaded (critical for mobile devices)
+    await this.waitForSDK();
+
+    // Verify SDK is available
     const tg = (window as any).Telegram;
     if (!tg?.WebApp) {
-      console.error('[DIAG] ERROR: window.Telegram.WebApp not found!');
-      console.log('[DIAG] window.Telegram:', tg);
+      console.error('[DIAG] ERROR: window.Telegram.WebApp not found after waitForSDK!');
       throw new Error('Telegram WebApp SDK not available');
     }
 
-    console.log('[DIAG] SDK found. Platform:', this.webApp.platform);
+    console.log('[DIAG] SDK loaded successfully');
+    console.log('[DIAG] Platform:', this.webApp.platform);
     console.log('[DIAG] SDK version:', this.webApp.version);
     console.log('[DIAG] initData length:', this.webApp.initData?.length || 0);
     console.log('[DIAG] initDataUnsafe.user:', this.webApp.initDataUnsafe.user ? 'present' : 'missing');
@@ -59,6 +83,33 @@ class TelegramService {
     }
 
     return initData;
+  }
+
+  /**
+   * Get initData with retry logic (for mobile devices where initData may be delayed)
+   */
+  async getInitDataWithRetry(maxRetries: number = 10, delayMs: number = 500): Promise<string> {
+    console.log('[DIAG] getInitDataWithRetry() starting...');
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const initData = this.webApp.initData;
+      console.log(`[DIAG] Checking initData (attempt ${attempt}/${maxRetries}), length: ${initData?.length || 0}`);
+
+      if (initData && initData.length > 0) {
+        console.log(`[DIAG] initData available on attempt ${attempt}`);
+        return initData;
+      }
+
+      if (attempt < maxRetries) {
+        console.log(`[DIAG] initData not ready, waiting ${delayMs}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+
+    // Last attempt - return whatever we have (even if empty)
+    const finalInitData = this.webApp.initData;
+    console.warn(`[DIAG] WARNING: initData still empty after ${maxRetries} attempts, returning length: ${finalInitData?.length || 0}`);
+    return finalInitData;
   }
 
   /**

@@ -30,9 +30,9 @@ function App() {
       setInitError(null);
       setShouldRetry(false);
 
-      // Initialize Telegram WebApp
-      console.log('[DIAG] Step 1: Calling telegramService.init()...');
-      telegramService.init();
+      // Initialize Telegram WebApp (async with SDK loading wait)
+      console.log('[DIAG] Step 1: Calling telegramService.init() (async)...');
+      await telegramService.init();
       console.log('[DIAG] Step 1: telegramService.init() completed');
 
       // Get user data for debugging (dev only)

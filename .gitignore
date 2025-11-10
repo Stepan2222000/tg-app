@@ -75,5 +75,4 @@ backend/uploads/
 
 # Cloudflare Tunnel (credentials contain secrets!)
 tunnel/credentials.json
-cloudflared-linux-amd64.deb
 *.deb

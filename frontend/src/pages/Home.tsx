@@ -176,11 +176,47 @@ export function Home() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             Как это работает?
           </h2>
-          <p className="text-text-muted dark:text-text-muted-dark leading-relaxed">
-            Выполняйте простые задачи по написанию сообщений на Авито и получайте за это
-            вознаграждение. Каждое выполненное задание пополняет ваш баланс, который вы
-            можете вывести в любое удобное время.
+
+          {/* Instruction to press button */}
+          <div className="bg-primary/10 border-2 border-primary/30 rounded-xl p-4 mb-4">
+            <p className="text-gray-900 dark:text-gray-100 font-semibold text-center">
+              👆 Нажми кнопку "Работа с задачами" выше, чтобы получить задачу
+            </p>
+          </div>
+
+          {/* Main explanation */}
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+            💸 РАБОТА НА 5 МИНУТ В ДЕНЬ
+          </h3>
+          <p className="text-text-muted dark:text-text-muted-dark leading-relaxed mb-3">
+            Мы платим за отправку рекламных сообщений на Авито. Всё просто:
           </p>
+          <ul className="space-y-2 text-text-muted dark:text-text-muted-dark mb-4">
+            <li>• Берёшь задачу с готовым текстом</li>
+            <li>• Отправляешь рекламу продавцу на Авито</li>
+            <li>• Делаешь скриншот</li>
+            <li>• Получаешь деньги</li>
+          </ul>
+
+          {/* Key benefits */}
+          <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 mb-4">
+            <p className="text-gray-900 dark:text-gray-100 font-semibold mb-2">
+              ⏱ Всего 5 минут в день - примерно 600₽ стабильно
+            </p>
+            <p className="text-sm text-text-muted dark:text-text-muted-dark">
+              Без рисков, без вложений - просто копируй текст, отправляй, делай скриншот
+            </p>
+          </div>
+
+          {/* Referral CTA */}
+          <div className="border-2 border-primary/20 rounded-lg p-4">
+            <p className="text-lg font-bold text-primary mb-2">
+              🎁 БОЛЬШИЕ ДЕНЬГИ - НА РЕФЕРАЛАХ!
+            </p>
+            <p className="text-sm text-text-muted dark:text-text-muted-dark">
+              Приглашай друзей и получай <span className="font-bold text-primary">100% от их заработка</span> каждый день! Один раз пригласил - получаешь ВСЕГДА столько же, сколько они!
+            </p>
+          </div>
         </div>
 
         {/* Support Button */}

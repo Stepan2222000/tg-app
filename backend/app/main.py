@@ -75,13 +75,16 @@ if os.getenv('ENVIRONMENT') == 'development':
     # Regex for development tunnels (localtunnel, Cloudflare)
     allow_origin_regex = r"https://.*\.(loca\.lt|trycloudflare\.com)"
 else:
-    # In production, only allow Telegram's WebApp origin
-    # Telegram Mini Apps run on https://web.telegram.org
+    # In production, allow Telegram's WebApp origins
+    # Desktop: https://web.telegram.org
+    # Mobile: https://tg.web.telegram.org (iOS, Android)
     allowed_origins = [
-        "https://web.telegram.org",
+        "https://web.telegram.org",        # Desktop Telegram
+        "https://tg.web.telegram.org",     # Mobile Telegram (iOS, Android)
         os.getenv('FRONTEND_URL', 'https://web.telegram.org')
     ]
-    allow_origin_regex = None
+    # Allow Telegram's internal WebView origins (mobile apps may use dynamic subdomains)
+    allow_origin_regex = r"https://[a-zA-Z0-9\-]+\.telegram\.org"
 
 app.add_middleware(
     CORSMiddleware,

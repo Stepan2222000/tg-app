@@ -24,7 +24,9 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 30000, // 30 seconds timeout to prevent infinite loading
+      // MOBILE-FRIENDLY: 60 seconds timeout for slower mobile networks
+      // Mobile devices may have 2G/3G connections, so we need higher timeout
+      timeout: 60000, // 60 seconds (increased from 30s for mobile support)
     });
 
     // Request interceptor to add Authorization header
@@ -100,6 +102,17 @@ class ApiService {
     console.log('[DIAG] Timestamp:', new Date().toISOString());
 
     try {
+      // CRITICAL FOR MOBILE: Wait for initData to be available before making request
+      console.log('[DIAG] Waiting for initData with retry logic...');
+      const initData = await telegramService.getInitDataWithRetry();
+      console.log('[DIAG] initData obtained, length:', initData?.length || 0);
+
+      if (!initData || initData.length === 0) {
+        console.error('[DIAG] CRITICAL: initData still empty after retry!');
+        throw new Error('Не удалось получить данные авторизации Telegram. Перезапустите приложение.');
+      }
+
+      // Make request with Authorization header (interceptor will use getInitData())
       const result = await this.api.post<never, User>('/api/auth/init');
       console.log('[DIAG] initUser() SUCCESS, user ID:', result.telegram_id);
       return result;
