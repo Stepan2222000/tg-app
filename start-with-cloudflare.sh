@@ -12,20 +12,34 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Step 1: Stop all old processes (full cleanup)
-echo -e "${YELLOW}[1/4] Stopping all old processes...${NC}"
+echo -e "${YELLOW}[1/5] Stopping all old processes...${NC}"
+
+# Stop Docker containers first (with longer timeout)
+docker compose down --timeout 10 2>/dev/null || true
+sleep 2
+
+# Kill all old development and bot processes
+pkill -9 -f "bot.py" 2>/dev/null || true
+pkill -9 -f "start-bot.sh" 2>/dev/null || true
 pkill -f "npm run dev" 2>/dev/null || true
 pkill -f "uvicorn" 2>/dev/null || true
 pkill -f "ngrok" 2>/dev/null || true
 pkill -f "localtunnel" 2>/dev/null || true
 pkill -f "cloudflared" 2>/dev/null || true
-pkill -f "bot.py" 2>/dev/null || true
-docker compose down 2>/dev/null || true
-sleep 2
+
+# Final check
+sleep 1
+if pgrep -f "bot.py" > /dev/null; then
+  echo -e "${YELLOW}⚠ Warning: Some bot.py processes still running. Forcing cleanup...${NC}"
+  pkill -9 -f "bot.py" 2>/dev/null || true
+  sleep 1
+fi
+
 echo -e "${GREEN}✓ All old processes stopped${NC}"
 echo ""
 
 # Step 2: Build and start Docker containers
-echo -e "${YELLOW}[2/4] Building and starting Docker containers...${NC}"
+echo -e "${YELLOW}[2/5] Building and starting Docker containers...${NC}"
 echo "This may take a few minutes on first run..."
 echo ""
 
@@ -41,7 +55,7 @@ echo -e "${GREEN}✓ Docker containers started${NC}"
 echo ""
 
 # Step 3: Wait for services to be healthy
-echo -e "${YELLOW}[3/4] Waiting for services to be healthy...${NC}"
+echo -e "${YELLOW}[3/5] Waiting for services to be healthy...${NC}"
 
 # Wait for backend
 for i in {1..30}; do
@@ -73,8 +87,20 @@ done
 
 echo ""
 
-# Step 4: Verify tunnel is ready
-echo -e "${YELLOW}[4/4] Verifying Cloudflare Tunnel...${NC}"
+# Step 4: Initialize database views for moderation
+echo -e "${YELLOW}[4/5] Installing moderation views in database...${NC}"
+docker exec avito_tasker_backend python3 install_views.py
+
+if [ $? -eq 0 ]; then
+  echo -e "${GREEN}✓ Database views created${NC}"
+else
+  echo -e "${YELLOW}⚠ Views creation had warnings (this is OK if views already exist)${NC}"
+fi
+
+echo ""
+
+# Step 5: Verify tunnel is ready
+echo -e "${YELLOW}[5/5] Verifying Cloudflare Tunnel...${NC}"
 echo "Waiting for named tunnel to connect (may take 10-15 seconds)..."
 echo ""
 
@@ -85,19 +111,22 @@ echo -e "${GREEN}✓ Named tunnel should be connected!${NC}"
 echo ""
 echo -e "${GREEN}Permanent tunnel URL: https://miniapp.cheapdomain2025.site${NC}"
 
-# Start Telegram bot in background
+# Check Telegram bot status (running via Docker)
 echo ""
-echo -e "${YELLOW}Starting Telegram bot...${NC}"
-nohup bash -c "cd /root/tg-app/tg-app && ./start-bot.sh" > /tmp/bot.log 2>&1 &
-BOT_PID=$!
-sleep 3
+echo -e "${YELLOW}Checking Telegram bot status...${NC}"
+sleep 2
 
-# Check if bot started successfully
-if ps -p $BOT_PID > /dev/null 2>&1; then
-  echo -e "${GREEN}✓ Telegram bot started (PID: $BOT_PID)${NC}"
-  echo -e "${GREEN}  Bot logs: tail -f /tmp/bot.log${NC}"
+BOT_STATUS=$(docker ps --filter "name=avito_tasker_bot" --format "{{.Status}}" 2>/dev/null)
+if [[ $BOT_STATUS == *"Up"* ]]; then
+  echo -e "${GREEN}✓ Telegram bot is running via Docker${NC}"
+  echo -e "${GREEN}  View logs: docker logs -f avito_tasker_bot${NC}"
+  echo ""
 else
-  echo -e "${YELLOW}⚠ Bot may have issues. Check: tail -f /tmp/bot.log${NC}"
+  echo -e "${RED}❌ Bot container failed to start${NC}"
+  echo -e "${YELLOW}  Checking logs:${NC}"
+  docker logs --tail 20 avito_tasker_bot 2>&1 || echo "No logs available"
+  echo ""
+  echo -e "${RED}  Please check the issue and restart${NC}"
 fi
 
 echo ""

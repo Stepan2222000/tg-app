@@ -7,6 +7,7 @@ from telegram.ext import ContextTypes
 from app.db.database import db
 from app.bot.keyboards import get_welcome_keyboard
 from app.dependencies.auth import hash_user_id
+from app.utils.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -98,9 +99,16 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
 
     # Send welcome message with Mini App button
+    commission_percent = int(config.REFERRAL_COMMISSION * 100)
     welcome_text = (
         f"Привет, {first_name}! 👋\n\n"
         "Добро пожаловать в Avito Tasker - платформу для заработка на простых задачах.\n\n"
+        f"💰 СВЕРХВЫГОДНЫЕ условия:\n"
+        f"• Простая задача: {config.SIMPLE_TASK_PRICE}₽\n"
+        f"• Задача с номером телефона: {config.PHONE_TASK_PRICE}₽\n\n"
+        f"🎁 РЕФЕРАЛЬНАЯ ПРОГРАММА:\n"
+        f"Приглашай друзей и получай {commission_percent}% от КАЖДОГО их заработка!\n"
+        f"Это значит, что твои рефералы зарабатывают столько же, а ты получаешь дополнительный доход!\n\n"
         "Зарабатывай, отправляя несколько сообщений в день в Avito - простая работа, щедрая оплата!\n\n"
         "Нажми кнопку ниже, чтобы начать:"
     )
@@ -117,8 +125,14 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /help command."""
+    commission_percent = int(config.REFERRAL_COMMISSION * 100)
     help_text = (
         "Avito Tasker - зарабатывай на выполнении простых задач!\n\n"
+        f"💰 Цены:\n"
+        f"• Простая задача: {config.SIMPLE_TASK_PRICE}₽\n"
+        f"• Задача с номером телефона: {config.PHONE_TASK_PRICE}₽\n\n"
+        f"🎁 Реферальная программа:\n"
+        f"Приглашай друзей и получай {commission_percent}% от их заработка!\n\n"
         "Используй /start для открытия приложения."
     )
     try:

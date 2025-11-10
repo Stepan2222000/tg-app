@@ -10,8 +10,10 @@ def get_welcome_keyboard() -> InlineKeyboardMarkup:
     Returns:
         InlineKeyboardMarkup with Web App button to open Mini App
     """
-    # Generate Mini App URL from config
-    mini_app_url = f"https://t.me/{config.TELEGRAM_BOT_USERNAME}/{config.TELEGRAM_APP_SHORT_NAME}"
+    # For WebAppInfo, we need the direct HTTPS URL of the Mini App
+    # NOT a t.me/bot/app link (that format is only for Direct Links)
+    # The Mini App URL should point to the actual web application
+    mini_app_url = config.MINI_APP_URL
 
     keyboard = [
         [

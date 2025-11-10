@@ -150,6 +150,7 @@ class Config:
     TELEGRAM_BOT_TOKEN: str = get_str_env('TELEGRAM_BOT_TOKEN')
     TELEGRAM_BOT_USERNAME: str = get_str_env('TELEGRAM_BOT_USERNAME')
     TELEGRAM_APP_SHORT_NAME: str = get_str_env('TELEGRAM_APP_SHORT_NAME', 'avitotasker')
+    MINI_APP_URL: str = get_str_env('MINI_APP_URL', 'https://miniapp.cheapdomain2025.site')
 
     # File Upload
     UPLOAD_DIR: str = get_str_env('UPLOAD_DIR', './uploads/screenshots')

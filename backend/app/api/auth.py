@@ -34,11 +34,14 @@ async def init_user(
     1. First-time user registration
     2. Returning user login (with smart update of username/first_name if changed)
 
-    NOTE: Referral logic is handled by Telegram bot (/start command).
-          The bot sets referred_by BEFORE Mini App opens.
+    NOTE: Referral logic is handled in TWO ways:
+          1. Telegram Bot /start command (traditional bot flow)
+          2. Direct Link Mini App start_param (direct WebApp launch via LAUNCH APP button)
+          This endpoint processes start_param for Direct Link scenario.
 
     Args:
-        user: Current user from get_current_user dependency (telegram_id, username, first_name)
+        user: Current user from get_current_user dependency
+              (telegram_id, username, first_name, start_param)
 
     Returns:
         User object:
@@ -53,28 +56,64 @@ async def init_user(
         }
 
     Logic:
+    - Parse start_param (format: ref_TELEGRAM_ID) to extract referrer
+    - Validate referrer (not self-referral, exists in DB)
     - If user does NOT exist in DB:
-      - INSERT new user (referred_by will be NULL unless set by bot)
+      - INSERT new user with referred_by from start_param
     - If user EXISTS in DB:
       - UPDATE username/first_name if changed
-      - referred_by is NOT updated (immutable, set only by bot)
+      - referred_by is NOT updated (immutable, set only once on first registration)
     """
     telegram_id = user["telegram_id"]
     username = user.get("username")
     first_name = user.get("first_name", "")
+    start_param = user.get("start_param")
+
+    # Parse referral code from start_param (format: ref_TELEGRAM_ID)
+    referred_by = None
+    if start_param and start_param.startswith('ref_'):
+        try:
+            referred_by = int(start_param.replace('ref_', ''))
+
+            # Validate: not self-referral (database has CHECK constraint, but validate early)
+            if referred_by == telegram_id:
+                logger.warning(f"Self-referral blocked: user={hash_user_id(telegram_id)}")
+                referred_by = None
+            else:
+                # Validate: referrer exists in database
+                referrer = await db.fetch_one(
+                    "SELECT telegram_id FROM users WHERE telegram_id = $1",
+                    referred_by
+                )
+                if not referrer:
+                    logger.warning(
+                        f"Referrer not found: user={hash_user_id(telegram_id)}, "
+                        f"referrer={hash_user_id(referred_by)}"
+                    )
+                    referred_by = None
+                else:
+                    logger.info(
+                        f"Valid referral detected: user={hash_user_id(telegram_id)} "
+                        f"→ referrer={hash_user_id(referred_by)}"
+                    )
+        except ValueError:
+            logger.warning(f"Invalid start_param format: {start_param}")
+            referred_by = None
 
     logger.info(f"[DIAG] ======================================")
     logger.info(f"[DIAG] /api/auth/init endpoint called")
     logger.info(f"[DIAG] telegram_id (hashed): {hash_user_id(telegram_id)}")
     logger.info(f"[DIAG] username: {username if username else 'none'}")
     logger.info(f"[DIAG] first_name length: {len(first_name) if first_name else 0}")
+    logger.info(f"[DIAG] start_param: {start_param if start_param else 'none'}")
+    logger.info(f"[DIAG] referred_by (hashed): {hash_user_id(referred_by) if referred_by else 'none'}")
 
     # Log with hashed ID (GDPR compliant)
     logger.info(f"init_user called for telegram_id={hash_user_id(telegram_id)}")
 
     # Use UPSERT to handle both new user registration and existing user update atomically
     # This prevents race condition when multiple requests arrive simultaneously
-    # NOTE: referred_by is NOT touched here (set only by Telegram bot)
+    # NOTE: referred_by is set on first registration (immutable after that)
     logger.info(f"[DIAG] Executing UPSERT query...")
 
     import time
@@ -83,16 +122,21 @@ async def init_user(
     try:
         user_data = await db.fetch_one(
             """
-            INSERT INTO users (telegram_id, username, first_name)
-            VALUES ($1, $2, $3)
+            INSERT INTO users (telegram_id, username, first_name, referred_by)
+            VALUES ($1, $2, $3, $4)
             ON CONFLICT (telegram_id) DO UPDATE
             SET username = EXCLUDED.username,
-                first_name = EXCLUDED.first_name
+                first_name = EXCLUDED.first_name,
+                referred_by = CASE
+                    WHEN users.referred_by IS NULL THEN EXCLUDED.referred_by
+                    ELSE users.referred_by
+                END
             RETURNING *
             """,
             telegram_id,
             username,
-            first_name
+            first_name,
+            referred_by
         )
 
         upsert_time = (time.time() - upsert_start) * 1000  # Convert to ms

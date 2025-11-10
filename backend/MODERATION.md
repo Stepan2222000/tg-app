@@ -79,7 +79,7 @@ ORDER BY uploaded_at ASC;
 1. Approves the task assignment
 2. Credits the user's main balance
 3. Returns the task to the pool (makes it available again)
-4. **Automatically calculates and credits referral commission (50%) if user was referred**
+4. **Automatically calculates and credits referral commission (100%) if user was referred**
 
 ```sql
 -- Replace {assignment_id} with actual assignment ID
@@ -131,17 +131,15 @@ BEGIN
         updated_at = NOW()
     WHERE id = v_task_id;
 
-    -- 4. If user has referrer, calculate and credit commission (50%)
+    -- 4. If user has referrer, calculate and credit commission (100%)
     IF v_referrer_id IS NOT NULL THEN
-        -- Calculate commission (50% of task price)
+        -- Calculate commission (100% of task price)
         DECLARE
             v_commission INTEGER;
             v_referral_username VARCHAR(255);
         BEGIN
-            -- NEW-CRITICAL-4 FIX: Use ROUND() instead of direct cast to avoid losing fractional rubles
-            -- Example: 51₽ * 0.5 = 25.5₽ → ROUND = 26₽ (fair)
-            -- Before: (51 * 0.5)::INTEGER = 25₽ (referrer loses 0.5₽)
-            v_commission := ROUND(v_task_price * 0.5)::INTEGER;
+            -- Commission is now 100% of task price (same as what the user earns)
+            v_commission := v_task_price;
 
             -- Get referred user's username for record
             SELECT username INTO v_referral_username
@@ -219,7 +217,7 @@ INSERT INTO referral_earnings (referrer_id, referral_id, amount, task_assignment
 SELECT
     u.referred_by as referrer_id,
     u.telegram_id as referral_id,
-    (t.price * 0.5)::INTEGER as amount,
+    t.price as amount,
     ta.id as task_assignment_id,
     t.type as task_type,
     u.username as referral_username
@@ -231,7 +229,7 @@ WHERE ta.id = {assignment_id}
 
 UPDATE users
 SET referral_balance = referral_balance + (
-    SELECT (t.price * 0.5)::INTEGER
+    SELECT t.price
     FROM task_assignments ta
     JOIN tasks t ON t.id = ta.task_id
     WHERE ta.id = {assignment_id}
