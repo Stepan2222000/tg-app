@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec:*)",
+      "Bash(cat:*)",
+      "Bash(cloudflared:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker compose logs:*)",
+      "Bash(curl:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker-compose:*)",
+      "Bash(python3 -m py_compile:*)",
+      "Bash(kill:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker inspect:*)",
+      "Bash(ps:*)",
+      "Bash(python3:*)",
+      "Bash(pgrep:*)",
+      "Bash(systemctl list-units:*)",
+      "Bash(screen:*)",
+      "Bash(lsof:*)",
+      "Bash(who:*)",
+      "Bash(tmux ls:*)",
+      "Bash(pkill:*)",
+      "Bash(chmod:*)",
+      "Bash(./start-production.sh)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

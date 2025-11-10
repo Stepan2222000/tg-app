@@ -53,6 +53,7 @@ build/
 # Claude Code
 .claude/chat_history/
 .claude/temp/
+.code/
 
 # Python
 __pycache__/
@@ -74,3 +75,5 @@ backend/uploads/
 
 # Cloudflare Tunnel (credentials contain secrets!)
 tunnel/credentials.json
+cloudflared-linux-amd64.deb
+*.deb
